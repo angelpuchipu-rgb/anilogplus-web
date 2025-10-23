@@ -201,7 +201,11 @@
         <button class="btn-ghost shrink-0" onclick="switchView('tier')">Tier表</button>
         <button class="btn-ghost shrink-0" onclick="switchView('settings')">設定</button>
         <button id="btnExport" class="btn shrink-0">JSON書出し</button>
-        <label class="btn-ghost cursor-pointer shrink-0">JSON読込 …
+        <label class="btn-ghost cursor-pointer shrink-0">
+          JSON読込
+          <input id="fileImport" type="file" accept="application/json" class="hidden">
+        </label>
+
 
       </nav>
     </div>
@@ -840,6 +844,28 @@
       async function saveReviewToCloud(id, rec) { /* 既存のままでOK */ }
 
       // 保存ボタン上書き（既存のままでOK）
+      const fileEl = document.getElementById('fileImport');
+      if (fileEl) {
+        fileEl.onchange = async (e) => {
+          const f = e.target.files?.[0];
+          if (!f) return;
+          try {
+            const txt = await f.text();
+            const j = JSON.parse(txt);
+            if (j.records) state.recs = j.records;
+            if (j.tier) state.tier = j.tier;
+            save(LS, state.recs); save(LS_TIER, state.tier);
+            renderReviews(); renderTier();
+            // お好みでカウンタ更新
+            if (typeof updateWatchedCounter === 'function') updateWatchedCounter();
+            alert('読み込みました');
+          } catch (err) {
+            console.error(err);
+            alert('JSONの形式が不正です');
+          }
+        };
+      }
+
     </script>
 
     <!-- ▲ Supabase ログイン＆同期スクリプト ▲ -->
