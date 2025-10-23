@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>anilog+ (Web) v2.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class'}</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:#050914;color:#fff}
+  .card{background:#0b1220;border:1px solid rgba(255,255,255,.08);border-radius:16px}
+  .btn{background:#3F6EE6;box-shadow:0 10px 30px -12px rgba(91,140,255,.45)} .btn:hover{background:#5B8CFF}
+  .btn,.btn-ghost{padding:.55rem 1rem;border-radius:.8rem;display:inline-flex;align-items:center;gap:.5rem}
+  .btn-ghost{background:rgba(255,255,255,.06)}
+  .input,.select,textarea{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:.6rem .8rem;border-radius:.9rem;outline:none;width:100%}
+  select option{color:#000;background:#fff}
+  .chip{border:1px solid rgba(255,255,255,.15);padding:.15rem .5rem;border-radius:9999px;font-size:.75rem;cursor:pointer}
+  .img-card{height:260px;background:#000;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+  .img-card img{max-height:100%;width:auto;object-fit:contain}
+  .img-hint{position:absolute;inset:auto 8px 8px auto;background:rgba(0,0,0,.55);padding:.25rem .5rem;border-radius:.5rem;font-size:.75rem;opacity:0;transition:.2s}
+  .img-card:hover .img-hint{opacity:1}
+  .score-circle{display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;font-weight:700;line-height:1;width:100px;height:100px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal{width:min(960px,95vw);max-height:90vh;overflow:auto}
+  .linklike{color:#8ab4ff;cursor:pointer}
+  /* レビュー画像のホバーでヒントを出す */
+.review-img:hover .img-hint { opacity: 1; }
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+<header class="sticky top-0 z-50 border-b border-white/10 bg-[#050914]/80 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <button id="homeBtn" class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center font-bold">A+</div>
+      <h1 class="text-xl font-semibold">anilog+ <span class="text-sm text-white/60">web</span></h1>
+    </button>
+    <nav class="flex items-center gap-2">
+      <span id="netBadge" class="text-xs px-2 py-1 rounded bg-white/10">接続: 未検証</span>
+      <button id="navHome" class="btn-ghost">ホーム</button>
+      <button class="btn-ghost" onclick="switchView('reviews')">レビュー</button>
+      <button class="btn-ghost" onclick="switchView('tier')">Tier表</button>
+      <button class="btn-ghost" onclick="switchView('settings')">設定</button>
+      <button id="btnExport" class="btn">JSON書出し</button>
+      <label class="btn-ghost cursor-pointer">JSON読込<input id="fileImport" type="file" accept="application/json" class="hidden"></label>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 space-y-8">
+  <section id="view-search" class="space-y-4">
+    <div class="card p-4 space-y-3">
+      <div class="grid md:grid-cols-[1fr,260px] gap-3">
+        <input id="q" class="input" placeholder="タイトル（例: 進撃の巨人 / NARUTO / 呪術廻戦）">
+        <div class="flex gap-2">
+          <select id="era" class="select w-full" title="2000年冬〜2025年秋">
+            <option value="">年代別検索（例: 2024 秋）</option>
+          </select>
+          <button id="btnSearch" class="btn shrink-0">検索</button>
+        </div>
+      </div>
+      <button id="btnClear" class="btn-ghost">入力クリア</button>
+      <div id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="pager" class="flex justify-center gap-3"></div>
+    </div>
+
+    <div class="card p-4 space-y-2">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">流行りのアニメ</h3>
+        <button class="btn-ghost text-sm" onclick="loadTrending()">更新</button>
+      </div>
+      <div id="trending" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+    </div>
+  </section>
+
+  <section id="view-reviews" class="hidden space-y-4">
+    <div class="card p-4 space-y-3">
+      <div class="flex flex-wrap gap-2 items-center">
+        <select id="filterStatus" class="select">
+          <option value="">全ステータス</option>
+          <option value="SEEN">見た</option>
+          <option value="WATCHING">見てる途中</option>
+          <option value="WANT">見たい</option>
+          <option value="DROP">途中切り</option>
+        </select>
+        <input id="filterTag" class="input" placeholder="タグで絞り込み（例: バトル）">
+        <select id="sortBy" class="select">
+          <option value="updatedAt">更新が新しい順</option>
+          <option value="score">点数が高い順</option>
+          <option value="title">タイトル順</option>
+        </select>
+      </div>
+      <div id="reviewStats" class="text-sm text-white/70"></div>
+      <div id="reviewList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+  </section>
+
+  <section id="view-tier" class="hidden space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold">Tier表メーカー</h3>
+      <div class="flex gap-2">
+        <button id="tierAdd" class="btn-ghost">段を追加</button>
+        <button id="tierReset" class="btn-ghost">空にする</button>
+        <button id="tierPng" class="btn">PNG保存</button>
+      </div>
+    </div>
+    <div id="tierBoard" class="space-y-2"></div>
+  </section>
+
+  <section id="view-settings" class="hidden">
+    <div class="card p-4 space-y-2">
+      <h3 class="font-semibold">設定 / データ</h3>
+      <button id="btnWipe" class="btn-ghost">すべてのローカルデータを削除</button>
+      <p class="text-sm text-white/60">ブラウザのローカルストレージに保存されます。バックアップはJSONで。</p>
+    </div>
+  </section>
+</main>
+
+<div id="overlay" class="overlay">
+  <div class="modal card p-4 space-y-4">
+  <div class="flex items-start gap-4">
+  <!-- 左カラム：縦積みに変更 -->
+  <div class="shrink-0 w-[240px] flex flex-col">
+    <div class="img-card rounded overflow-hidden w-[240px]">
+      <img id="mCover" alt="">
+      <div class="img-hint">クリックで編集</div>
+    </div>
+
+    <!-- 画像の直下に関連シーズンを表示 -->
+    <div id="mRelatedLeft" class="mt-3 hidden">
+      <div class="text-xs text-white/60">関連シーズン</div>
+      <div id="mRelatedChipsLeft" class="mt-1 flex flex-wrap gap-2"></div>
+    </div>
+  </div>
+
+  <div class="flex-1 space-y-2">
+    <!-- 右カラム（タイトルや説明など） -->
+
+
+<!-- 画像カードの“外”、直後に置く（重複させない） -->
+<div id="mRelatedLeft" class="mt-3 hidden w-[240px]">
+  <div class="text-xs text-white/60">関連シーズン</div>
+  <div id="mRelatedChipsLeft" class="mt-1 flex flex-wrap gap-2"></div>
+</div>
+
+
+<!-- 画像カードの“外”、直後に置く -->
+<div id="mRelatedLeft" class="mt-2 hidden w-[240px]">
+  <div class="text-xs text-white/60">関連シーズン</div>
+  <div id="mRelatedChipsLeft" class="mt-1 flex flex-wrap gap-2"></div>
+</div>
+
+      <div class="flex-1 space-y-2">
+        <div class="text-lg font-semibold" id="mTitle"></div>
+        <div class="text-xs text-white/60" id="mMeta"></div>
+        <div id="mDesc" class="text-sm text-white/80 max-h-40 overflow-auto"></div>
+
+        <div id="mRelatedWrap" class="hidden">
+          <div class="pt-2 border-t border-white/10"></div>
+          <div class="text-sm font-semibold">関連シーズン</div>
+          <div id="mRelated" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="pt-2 border-t border-white/10"></div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="text-sm">ステータス
+            <select id="mStatus" class="select mt-1">
+              <option value="">未設定</option>
+              <option value="SEEN">見た</option>
+              <option value="WATCHING">見てる途中</option>
+              <option value="WANT">見たい</option>
+              <option value="DROP">途中切り</option>
+            </select>
+          </label>
+          <label class="text-sm">点数（1〜100）
+            <div class="flex items-center gap-3 mt-1">
+              <input id="mScore" type="range" min="1" max="100" value="80" class="w-full">
+              <input id="mScoreInput" type="number" min="1" max="100" value="80" class="input w-24 text-center">
+              <span id="mScoreCircle" class="score-circle text-base"></span>
+            </div>
+          </label>
+        </div>
+        <label class="text-sm">タグ（カンマ区切り）
+          <input id="mTags" class="input mt-1" placeholder="ラブコメ, バトル, 学園...">
+        </label>
+        <label class="text-sm">感想・コメント
+          <textarea id="mComment" class="input mt-1 h-28" placeholder="感想やメモ"></textarea>
+        </label>
+        <div class="flex justify-between items-center pt-2">
+          <button id="btnDelete" class="btn-ghost text-red-300 hidden">削除</button>
+          <div class="flex gap-2">
+            <button id="btnClose" class="btn-ghost">閉じる</button>
+            <button id="btnSave" class="btn">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="tpl-result">
+  <div class="card overflow-hidden">
+    <div class="img-card flex items-center justify-center bg-gray-900 rounded-lg overflow-hidden">
+      <img class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105" alt="アニメ画像">
+      <div class="img-hint">クリックして評価</div>
+    </div>
+    <div class="p-3 space-y-2">
+      <div class="flex items-start justify-between gap-2">
+        <div class="font-semibold leading-tight"></div>
+        <span class="text-xs px-2 py-1 rounded bg-white/10"></span>
+      </div>
+      <div class="text-xs text-white/70 line-clamp-3 min-h-[3.5rem]" data-desc></div>
+      <div class="flex flex-wrap gap-2 text-xs" data-chips></div>
+      <div class="flex items-center justify-between pt-2">
+        <button class="btn-ghost" data-edit>編集</button>
+        <button class="btn-ghost" data-tier>Tierへ</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-review">
+  <div class="card flex items-start p-4 rounded-lg bg-neutral-900/60 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <!-- アニメ画像 -->
+    <div class="w-24 h-32 shrink-0 overflow-hidden rounded-lg shadow-md bg-gray-900 relative review-img cursor-pointer">
+      <img class="w-full h-full object-cover transition-transform duration-300 hover:scale-105 cursor-pointer">
+      <div class="img-hint">クリックして編集</div>
+    </div>
+    
+
+    <!-- 情報エリア -->
+    <div class="flex-1 ml-4">
+      <!-- タイトル＋スコア -->
+      <div class="flex items-start justify-between gap-2">
+        <div class="font-semibold text-base text-white leading-tight line-clamp-2" data-title></div>
+        <div class="text-lg font-bold text-blue-400 shrink-0" data-score></div>
+      </div>
+
+      <!-- 制作情報 -->
+      <div class="mt-1 text-sm text-gray-300" data-meta></div>
+
+      <!-- コメント -->
+      <p class="mt-2 text-sm text-gray-400 leading-relaxed" data-comment></p>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-tier-row">
+  <div class="flex gap-2">
+    <div class="flex items-center gap-2 bg-white/10 rounded px-2"><input class="bg-transparent outline-none w-12 font-bold" value="S"><button data-del class="text-white/60">✕</button></div>
+    <div data-zone class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 flex-1 bg-white/5 rounded p-2 border border-white/10"></div>
+  </div>
+</template>
+
+<script>
+const LS='anilogplus_v1', LS_TIER='anilogplus_tier';
+const state={cache:{},recs:load(LS)||{},tier:load(LS_TIER)||[],provider:'anilist',editingId:null};
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function load(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
+function jpSeason(s){return ({WINTER:'冬',SPRING:'春',SUMMER:'夏',FALL:'秋'})[s]||s||''}
+function colorForScore(n){const hue=Math.round((n/100)*120);return `hsl(${hue} 80% 40%)`}
+function setCircle(el,n){el.style.background=colorForScore(n);el.textContent=n;el.className='score-circle text-white'}
+
+(()=>{
+  const era=document.getElementById('era');
+  const seasons=['FALL','SUMMER','SPRING','WINTER'];
+  for(let y=2025;y>=2000;y--){
+    for(const s of seasons){
+      if(y===2025 && s==='WINTER') continue;
+      const o=document.createElement('option');
+      o.value=y+'-'+s;
+      o.textContent=`${y} ${jpSeason(s)}`;
+      era.appendChild(o);
+    }
+  }
+})();
+
+function goHome() {
+  // すべてのビューを非表示にする
+  ['search', 'reviews', 'tier', 'settings'].forEach(id => {
+    document.getElementById('view-' + id).classList.add('hidden');
+  });
+
+  // ホーム画面（検索画面）を表示する
+  document.getElementById('view-search').classList.remove('hidden');
+
+  // スクロールをトップに戻す
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.getElementById('homeBtn').onclick = goHome;
+document.getElementById('navHome').onclick = goHome;
+
+q.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search(1)}});
+era.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search(1)}});
+
+function switchView(v){
+  ['search','reviews','tier','settings'].forEach(id=>document.getElementById('view-'+id).classList.toggle('hidden',id!==v));
+  if(v==='reviews') renderReviews();
+  if(v==='tier') renderTier();
+}
+
+async function testConnections(){
+  const badge=document.getElementById('netBadge'); badge.textContent='接続: チェック中…';
+  try{await fetch('https://graphql.anilist.co',{method:'HEAD',mode:'cors'}); badge.textContent='接続: AniList'; state.provider='anilist';}
+  catch{ try{await fetch('https://api.jikan.moe/v4'); badge.textContent='接続: Jikan(MAL)'; state.provider='jikan';}
+  catch{ badge.textContent='接続: 失敗（ネットワークを確認）'; } }
+} testConnections();
+
+async function loadTrending(){
+  const wrap=document.getElementById('trending'); wrap.innerHTML='<div class="text-white/60">読み込み中…</div>';
+  try{
+    let items=[];
+    if(state.provider==='anilist'){
+      const query=`query{ Page(perPage:12){ media(type:ANIME,sort:TRENDING_DESC){ id title{native romaji} coverImage{medium large} season seasonYear } } }`;
+      const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+      const j=await r.json(); items=j.data.Page.media.map(mapFromAniList);
+    }else{
+      const r=await fetch('https://api.jikan.moe/v4/top/anime?filter=bypopularity&limit=12'); const j=await r.json(); items=j.data.map(mapFromJikan);
+    }
+    wrap.innerHTML='';
+    items.forEach(m=>{
+      const div=document.createElement('div'); div.className='cursor-pointer';
+      div.innerHTML=`<img src="${m.cover}" class="w-full h-28 object-contain bg-black/60 rounded"><div class="text-xs mt-1 line-clamp-2">${m.title}</div>`;
+      div.onclick=()=>openModal(m.id);
+      wrap.appendChild(div);
+    });
+  }catch{wrap.innerHTML='<div class="text-white/60">取得に失敗しました</div>';}
+}
+loadTrending();
+
+async function search(page=1){
+  const kw=q.value.trim();
+  const eraVal=era.value;
+  let season, seasonYear;
+  if(eraVal){ const [y,s]=eraVal.split('-'); seasonYear=Number(y); season=s; }
+  try{
+    let items=[], pageInfo={currentPage:page,hasNextPage:false};
+    if(state.provider==='anilist'){
+      const query=`query($page:Int,$perPage:Int,$search:String,$season:MediaSeason,$seasonYear:Int){
+        Page(page:$page,perPage:$perPage){pageInfo{currentPage hasNextPage} media(type:ANIME,search:$search,season:$season,seasonYear:$seasonYear,sort:POPULARITY_DESC){
+          id title{native romaji english} coverImage{large medium} season seasonYear description(asHtml:false)
+          studios(isMain:true){nodes{name}} characters(role:MAIN, perPage:6){edges{node{name{full}} voiceActors(language:JAPANESE, perPage:1){name{full}}}}
+        }}}`;
+      const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,perPage:18,search:kw||undefined,season,seasonYear}})});
+      if(!r.ok) throw new Error('AniList blocked'); const {data}=await r.json(); items=data.Page.media.map(mapFromAniList); pageInfo=data.Page.pageInfo;
+      document.getElementById('netBadge').textContent='接続: AniList';
+    }else{
+      let url='https://api.jikan.moe/v4/anime?order_by=members&sort=desc&sfw=true&limit=18&page='+page;
+      if(kw) url+='&q='+encodeURIComponent(kw);
+      if(!kw && season && seasonYear){ url=`https://api.jikan.moe/v4/seasons/${seasonYear}/${season.toLowerCase()}?limit=18&page=${page}`;}
+      const r=await fetch(url,{mode:'cors'}); if(!r.ok) throw new Error('Jikan failed'); const j=await r.json();
+      items=(j.data||[]).map(mapFromJikan); pageInfo={currentPage:page,hasNextPage:!!j.pagination?.has_next_page};
+      document.getElementById('netBadge').textContent='接続: Jikan(MAL)';
+    }
+    renderResults(items,pageInfo);
+  }catch(e){ if(state.provider==='anilist'){state.provider='jikan'; return search(page);} document.getElementById('results').innerHTML='<div class="text-white/70">検索に失敗しました。</div>'; }
+}
+document.getElementById('btnSearch').onclick=()=>search(1);
+document.getElementById('btnClear').onclick=()=>{q.value=''; era.value=''; search(1)};
+
+function mapFromAniList(m){ state.cache[m.id]=m; return {id:m.id,title:m.title.native||m.title.romaji||m.title.english,cover:m.coverImage.large||m.coverImage.medium,season:`${m.seasonYear||''} ${jpSeason(m.season)}`.trim(),desc:(m.description||'').replace(/<br>/g,' ').replace(/<\/?i>/g,''),chips:[{label:(m.studios?.nodes?.[0]?.name)||'—',kind:'studio'}, ...((m.characters?.edges||[]).map(e=>({label:`${e.node.name.full}（${(e.voiceActors?.[0]?.name.full)||'—'}）`,kind:'cast'})))].slice(0,5)};}
+function mapFromJikan(a){ const id=a.mal_id; const title=a.title_japanese||a.title; const cover=a.images?.jpg?.image_url||a.images?.webp?.image_url||''; const seasonYear=a.year||''; const season=(a.season||''); const desc=(a.synopsis||''); const studios=(a.studios?.[0]?.name)||'—'; state.cache[id]={title:{native:title},coverImage:{medium:cover,large:cover},seasonYear,season:season.toUpperCase(),description:desc,studios:{nodes:[{name:studios}]}}; return {id,title,cover,season:`${seasonYear} ${jpSeason((season||'').toUpperCase())}`.trim(),desc,chips:[{label:studios,kind:'studio'}]}; }
+
+function renderResults(list,pageInfo){
+  const wrap=document.getElementById('results'); wrap.innerHTML='';
+  const tpl=document.getElementById('tpl-result').content;
+  list.forEach(m=>{ const n=tpl.cloneNode(true); const img=n.querySelector('img'); img.src=m.cover; img.alt=m.title; img.onclick=()=>openModal(m.id); n.querySelector('.font-semibold').textContent=m.title; async function translateToJapanese(text) {
+  const maxLength = 400; // APIの制限に合わせて文字数を制限
+  const truncatedText = text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncatedText)}&langpair=en|ja`);
+  const data = await response.json();
+  return data.responseData.translatedText || truncatedText;
+}
+
+(async () => {
+  const description = m.desc || '';
+  n.querySelector('[data-desc]').textContent = await translateToJapanese(description);
+})(); ntent=m.desc; const chips=n.querySelector('[data-chips]'); (m.chips||[]).forEach(t=>{const s=document.createElement('span'); s.className='chip'; s.textContent=t.label; s.onclick=()=>{ if(t.kind==='studio') searchByStudio(t.label); else { q.value=t.label; search(1);} }; chips.appendChild(s)}); n.querySelector('[data-edit]').onclick=()=>openModal(m.id); n.querySelector('[data-tier]').onclick=()=>addToTier(m.id); wrap.appendChild(n); });
+  const pager=document.getElementById('pager'); pager.innerHTML=''; const prev=document.createElement('button'); prev.className='btn-ghost'; prev.textContent='« 前'; prev.disabled=pageInfo.currentPage<=1; prev.onclick=()=>search(pageInfo.currentPage-1); const next=document.createElement('button'); next.className='btn-ghost'; next.textContent='次 »'; next.disabled=!pageInfo.hasNextPage; next.onclick=()=>search(pageInfo.currentPage+1); pager.append(prev,next);
+}
+
+async function searchByStudio(name){
+  if(state.provider==='anilist'){
+    const query=`query($q:String){ Studio(search:$q){ name media(perPage:30, sort:POPULARITY_DESC){ nodes{ id title{native romaji} coverImage{medium} season seasonYear } } } }`;
+    try{
+      const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,variables:{q:name}})});
+      const j=await r.json();
+      const m=(j.data?.Studio?.media?.nodes||[]).map(mapFromAniList);
+      renderResults(m,{currentPage:1,hasNextPage:false});
+      document.getElementById('netBadge').textContent='接続: AniList';
+      return;
+    }catch{}
+  }
+  q.value=name; search(1);
+}
+
+async function fetchRelationsJikan(id){
+  try {
+    const r = await fetch(`https://api.jikan.moe/v4/anime/${id}/relations`);
+    const j = await r.json();
+    const edges = j.data || [];
+    // Prequel / Sequel のみ抽出
+    const entries = edges
+      .filter(e => e.relation === 'Prequel' || e.relation === 'Sequel')
+      .flatMap(e => e.entry || []);
+    // AniList版に寄せた軽量オブジェクトへ
+    return entries.map(e => ({
+      id: e.mal_id,
+      title: { native: e.name },
+      seasonYear: null,
+      season: null,
+      coverImage: { medium: '' }
+    }));
+  } catch {
+    return [];
+  }
+}
+
+
+function openModal(id){
+  state.editingId=id;
+  let m=state.cache[id];
+  const rec=state.recs[id]||{score:80};
+  if(!m && rec.meta){
+    m={title:{native:rec.meta.title},coverImage:{large:rec.meta.cover,medium:rec.meta.cover},seasonYear:rec.meta.seasonYear,season:rec.meta.season,description:rec.meta.description,studios:{nodes:[{name:rec.meta.studio||'—'}]}};
+    state.cache[id]=m;
+  }
+mCover.src = m?.coverImage?.large
+          || m?.coverImage?.medium
+          || rec?.meta?.cover       // ← 追加
+          || '';
+
+  mTitle.textContent=m?.title?.native||m?.title?.romaji||m?.title?.english||('ID '+id);
+  mMeta.textContent=`${m?.seasonYear||''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name)||'—'}`;
+  async function translateToJapanese(text) {
+  const maxLength = 400; // APIの制限に合わせて文字数を制限
+  const truncatedText = text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  try {
+    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncatedText)}&langpair=en|ja`);
+    const data = await response.json();
+    return data.responseData.translatedText || truncatedText;
+  } catch (error) {
+    console.error('翻訳エラー:', error);
+    return text; // 翻訳失敗時は元のテキストを返す
+  }
+}
+
+(async () => {
+  const description = m?.description || '';
+  mDesc.textContent = await translateToJapanese(description);
+})();
+// デフォルトステータスを「見た」に設定
+mStatus.value = rec.status || 'SEEN';
+
+  mScore.value=rec.score||80; mScoreInput.value=rec.score||80; setCircle(mScoreCircle, rec.score||80);
+  mTags.value=(rec.tags||[]).join(', ');
+  mComment.value=rec.comment||'';
+  document.getElementById('btnDelete').classList.toggle('hidden',!state.recs[id]);
+  overlay.style.display='flex';
+
+(async()=>{
+  const rightWrap = document.getElementById('mRelated');
+  const rightSec  = document.getElementById('mRelatedWrap');
+  const leftSec   = document.getElementById('mRelatedLeft');
+  const leftChips = document.getElementById('mRelatedChipsLeft');
+
+  if (rightWrap) rightWrap.innerHTML = '';
+  if (leftChips) leftChips.innerHTML = '';
+  if (leftSec)   leftSec.classList.add('hidden');
+
+  // 関連の取得（AniList優先、必要ならJikanにフォールバック）
+  let list = [];
+  if (state.provider === 'anilist') {
+    list = await fetchRelationsAniList(id);
+    // 画像など最低限のメタをキャッシュに補完
+async function ensureCachedMeta(id) {
+  const m = state.cache[id];
+  if (m && (m.coverImage?.large || m.coverImage?.medium)) return;
+
+  try {
+    if (state.provider === 'anilist') {
+      const query = `query($id:Int){
+        Media(id:$id,type:ANIME){
+          id title{native romaji english}
+          coverImage{large medium}
+          season seasonYear
+          description(asHtml:false)
+          studios(isMain:true){nodes{name}}
+        }
+      }`;
+      const r = await fetch('https://graphql.anilist.co', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({query, variables:{id}})
+      });
+      const j = await r.json();
+      const a = j.data?.Media;
+      if (a) {
+        state.cache[id] = {
+          title: a.title,
+          coverImage: a.coverImage,
+          season: a.season,
+          seasonYear: a.seasonYear,
+          description: a.description,
+          studios: a.studios
+        };
+      }
+    } else {
+      const r = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
+      const j = await r.json();
+      const a = j.data;
+      if (a) {
+        state.cache[id] = {
+          title: { native: a.title_japanese || a.title },
+          coverImage: {
+            large:  a.images?.jpg?.large_image_url || a.images?.webp?.large_image_url,
+            medium: a.images?.jpg?.image_url       || a.images?.webp?.image_url
+          },
+          season: (a.season || '').toUpperCase(),
+          seasonYear: a.year || '',
+          description: a.synopsis || '',
+          studios: { nodes: [{ name: a.studios?.[0]?.name || '—' }] }
+        };
+      }
+    }
+  } catch (e) {}
+}
+
+  } else if (typeof fetchRelationsJikan === 'function') {
+    list = await fetchRelationsJikan(id);
+  }
+
+  if (Array.isArray(list) && list.length) {
+    list.sort((a,b)=>(b.seasonYear||0)-(a.seasonYear||0));
+    if (leftSec) leftSec.classList.remove('hidden');
+
+    list.forEach(x=>{
+      const b=document.createElement('button');
+      b.className='chip';
+      b.textContent=
+        (x.title?.native||x.title?.romaji||'') +
+        (x.seasonYear?` ${x.seasonYear}`:'') +
+        (x.season?` ${jpSeason(x.season)}`:'');
+        b.onclick = async () => {
+        await ensureCachedMeta(x.id);
+        openModal(x.id);
+};
+
+      leftChips.appendChild(b);
+
+      // 軽いキャッシュ補完（後続表示のため）
+      state.cache[x.id]=Object.assign(state.cache[x.id]||{}, {
+        title:x.title,
+        coverImage:{ medium:x.coverImage?.medium },
+        season:x.season,
+        seasonYear:x.seasonYear
+      });
+    });
+
+    // 右側の旧枠は隠す（重複回避）
+    if (rightSec) rightSec.classList.add('hidden');
+  } else {
+    if (rightSec) rightSec.classList.add('hidden');
+    if (leftSec)  leftSec.classList.add('hidden');
+  }
+})();
+
+
+
+}
+function closeModal(){ overlay.style.display='none'; }
+mScore.oninput=e=>{ mScoreInput.value=e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
+mScoreInput.oninput=e=>{ const v=Math.max(1, Math.min(100, Number(e.target.value)||1)); mScore.value=v; setCircle(mScoreCircle, v); }
+btnClose.onclick=closeModal;
+btnSave.onclick=()=>{
+  const id=state.editingId; if(!id) return;
+  const m=state.cache[id]||{};
+  const meta={
+    title:(m.title?.native||m.title?.romaji||m.title?.english||('ID '+id)),
+    cover:(m.coverImage?.large||m.coverImage?.medium||''),
+    studio:(m.studios?.nodes?.[0]?.name)||'—',
+    seasonYear:m.seasonYear||'',
+    season:m.season||'',
+    description:m.description||''
+  };
+  const tags=mTags.value.split(',').map(s=>s.trim()).filter(Boolean);
+  state.recs[id]={status:mStatus.value||null,score:Number(mScore.value),tags,comment:mComment.value,updatedAt:Date.now(),meta};
+  save(LS,state.recs); closeModal(); alert('保存しました');
+};
+btnDelete.onclick=()=>{
+  const id=state.editingId; if(!id) return;
+  if(confirm('このレビューを削除しますか？')){
+    delete state.recs[id]; save(LS,state.recs); closeModal(); renderReviews();
+  }
+};
+
+function renderReviews(){
+  const fs=filterStatus.value, ft=(filterTag.value||'').toLowerCase(), sb=sortBy.value;
+  let rows=Object.entries(state.recs).map(([id,rec])=>({id:Number(id),rec,m:state.cache[id]||rec.meta?{title:{native:rec.meta?.title},coverImage:{large:rec.meta?.cover},studios:{nodes:[{name:rec.meta?.studio}]}}:null}));
+  rows=rows.filter(r=>!fs||r.rec.status===fs).filter(r=>!ft||(r.rec.tags||[]).some(t=>t.toLowerCase().includes(ft)));
+  rows.sort((a,b)=> sb==='score'?(b.rec.score||0)-(a.rec.score||0) : sb==='title'? ( (a.m?.title?.native||a.rec.meta?.title||'').localeCompare(b.m?.title?.native||b.rec.meta?.title||'') ) : (b.rec.updatedAt||0)-(a.rec.updatedAt||0) );
+  const avg=rows.length?(rows.reduce((s,r)=>s+(r.rec.score||0),0)/rows.length).toFixed(1):'-';
+  reviewStats.textContent=`件数: ${rows.length}　平均点: ${avg}`;
+  reviewList.innerHTML='';
+  const tpl=document.getElementById('tpl-review').content;
+  rows.forEach(r=>{
+    const n=tpl.cloneNode(true);
+    const cover=r.m?.coverImage?.large||r.rec.meta?.cover||'';
+    const img=n.querySelector('img');
+    img.src=cover;
+    img.alt=r.m?.title?.native||r.rec.meta?.title||('ID '+r.id);
+    img.onclick=()=>openModal(r.id);
+    n.querySelector('[data-title]').textContent=r.m?.title?.native||r.rec.meta?.title||('ID '+r.id);
+    const scoreBox=document.createElement('div'); setCircle(scoreBox, r.rec.score||0);
+    n.querySelector('[data-score]').appendChild(scoreBox);
+    const studio=(r.m?.studios?.nodes?.[0]?.name)||r.rec.meta?.studio||'—';
+    n.querySelector('[data-meta]').innerHTML=`${(r.rec.tags||[]).map(t=>`<span class='chip'>${t}</span>`).join(' ')}　|　<span class='linklike'>${studio}</span>`;
+    n.querySelector('[data-meta]').querySelector('.linklike').onclick=()=>searchByStudio(studio);
+    reviewList.appendChild(n);
+  });
+}
+filterStatus.onchange=renderReviews; filterTag.oninput=()=>{clearTimeout(window.__ft); window.__ft=setTimeout(renderReviews,250)}; sortBy.onchange=renderReviews;
+
+function ensureTier(){ if(!state.tier.length) state.tier=[{label:'S',items:[]},{label:'A',items:[]},{label:'B',items:[]},{label:'C',items:[]}]; }
+function renderTier(){ ensureTier(); tierBoard.innerHTML=''; state.tier.forEach((row,i)=>{ const t=document.getElementById('tpl-tier-row').content; const n=t.cloneNode(true); const input=n.querySelector('input'); input.value=row.label; input.onchange=()=>{row.label=input.value; save(LS_TIER,state.tier)}; n.querySelector('[data-del]').onclick=()=>{state.tier.splice(i,1); save(LS_TIER,state.tier); renderTier()}; const zone=n.querySelector('[data-zone]'); row.items.forEach(id=>{ const m=state.cache[id]||state.recs[id]?.meta?{coverImage:{medium:state.recs[id].meta.cover},title:{native:state.recs[id].meta.title}}:null; const card=document.createElement('div'); card.className='rounded overflow-hidden border border-white/10 bg-black/40'; card.dataset.id=id; card.innerHTML=`<img src="${m?.coverImage?.medium||''}" class="w-full h-32 object-contain bg-black/60"><div class="p-2 text-xs">${m?.title?.native||('ID '+id)}</div>`; zone.appendChild(card) }); new Sortable(zone,{group:'tier',animation:150,onAdd:saveTierFromDOM,onUpdate:saveTierFromDOM,onRemove:saveTierFromDOM}); tierBoard.appendChild(n); }); }
+function saveTierFromDOM(){ const rows=[...document.querySelectorAll('#tierBoard [data-zone]')]; state.tier=rows.map((zone,i)=>({label:document.querySelectorAll('#tierBoard input')[i].value, items:[...zone.children].map(el=>Number(el.dataset.id))})); save(LS_TIER,state.tier); }
+function addToTier(id){ ensureTier(); if(!state.tier[0].items.includes(id)){ state.tier[0].items.push(id); save(LS_TIER,state.tier); renderTier(); } }
+tierAdd.onclick=()=>{ state.tier.push({label:'新段',items:[]}); save(LS_TIER,state.tier); renderTier() };
+tierReset.onclick=()=>{ if(confirm('Tier表を空にしますか？')){ state.tier=[]; save(LS_TIER,state.tier); renderTier() } };
+tierPng.onclick=async()=>{ const canvas=await html2canvas(tierBoard,{backgroundColor:'#050914',scale:2}); const a=document.createElement('a'); a.download='anilogplus-tier.png'; a.href=canvas.toDataURL('image/png'); a.click(); };
+
+btnExport.onclick=()=>{ const blob=new Blob([JSON.stringify({records:state.recs,tier:state.tier,version:4},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.download='anilogplus-data.json'; a.href=URL.createObjectURL(blob); a.click(); };
+fileImport.onchange=async e=>{const f=e.target.files[0]; if(!f) return; try{const t=await f.text(); const j=JSON.parse(t); if(j.records) state.recs=j.records; if(j.tier) state.tier=j.tier; save(LS,state.recs); save(LS_TIER,state.tier); alert('読み込みました'); renderReviews(); renderTier()}catch{alert('JSON形式が不正です')}};
+btnWipe.onclick=()=>{ if(confirm('本当に削除しますか？')){ localStorage.removeItem(LS); localStorage.removeItem(LS_TIER); state.recs={}; state.tier=[]; alert('削除しました'); } };
+
+switchView('search');
+</script>
+</body>
+</html>
