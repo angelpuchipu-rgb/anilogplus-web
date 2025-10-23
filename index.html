@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja" class="dark">
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ★あなたのプロジェクト値に置き換え
+  const SUPA_URL = "https://xxxxx.supabase.co";
+  const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....";
+  const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
+</script>
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -271,9 +279,26 @@
       <div class="card p-4 space-y-2">
         <h3 class="font-semibold">設定 / データ</h3>
         <button id="btnWipe" class="btn-ghost">すべてのローカルデータを削除</button>
-        <p class="text-sm text-gray-500">ブラウザのローカルストレージに保存されます。バックアップはJSONで。</p>
+        <p class="text-sm text-white/60">ブラウザのローカルストレージに保存されます。バックアップはJSONで。</p>
       </div>
+
+      <!-- ▼▼ Supabase ログイン UI をここに追加 ▼▼ -->
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold">アカウント</h3>
+        <div class="grid sm:grid-cols-2 gap-2">
+          <input id="authEmail" class="input" placeholder="メールアドレス">
+          <input id="authPass" class="input" type="password" placeholder="パスワード">
+        </div>
+        <div class="flex gap-2">
+          <button id="btnSignUp" class="btn-ghost">新規登録</button>
+          <button id="btnSignIn" class="btn">ログイン</button>
+          <button id="btnSignOut" class="btn-ghost">ログアウト</button>
+        </div>
+        <div id="authState" class="text-sm text-gray-500">未ログイン</div>
+      </div>
+      <!-- ▲▲ ここまで追加 ▲▲ -->
     </section>
+
   </main>
 
   <div id="overlay" class="overlay">
@@ -743,7 +768,11 @@
         };
         const tags = mTags.value.split(',').map(s => s.trim()).filter(Boolean);
         state.recs[id] = { status: mStatus.value || null, score: Number(mScore.value), tags, comment: mComment.value, updatedAt: Date.now(), meta };
-        save(LS, state.recs); closeModal(); alert('保存しました');
+        save(LS, state.recs);
+        // レビュータブを見ているときは即再描画
+        if (!document.getElementById('view-reviews').classList.contains('hidden')) renderReviews();
+        closeModal();
+        alert('保存しました');
       };
       btnDelete.onclick = () => {
         const id = state.editingId; if (!id) return;
@@ -793,6 +822,86 @@
 
       switchView('search');
     </script>
+    <!-- ▼ Supabase ログイン＆同期スクリプト ▼ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // ★あなたの Supabase プロジェクトの情報に置き換える！
+      const SUPA_URL = "https://xxxxx.supabase.co";  // ← 自分のURL
+      const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // ← 自分のanon key
+      const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
+
+      let currentUser = null;
+
+      // 起動時：ログイン確認
+      (async function initAuth() {
+        const { data } = await supa.auth.getUser();
+        currentUser = data.user || null;
+        document.getElementById('authState').textContent =
+          currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
+        if (currentUser) await syncFromCloud(); // クラウド→ローカル同期
+      })();
+
+      // サインアップ
+      async function signUp() {
+        const email = authEmail.value.trim(), password = authPass.value;
+        const { error } = await supa.auth.signUp({ email, password });
+        alert(error ? `登録失敗: ${error.message}` : '登録メールを確認してください');
+      }
+
+      // サインイン
+      async function signIn() {
+        const email = authEmail.value.trim(), password = authPass.value;
+        const { data, error } = await supa.auth.signInWithPassword({ email, password });
+        if (error) { alert('ログイン失敗: ' + error.message); return; }
+        currentUser = data.user;
+        authState.textContent = `ログイン中: ${currentUser.email}`;
+        await syncFromCloud();
+        renderReviews();
+      }
+
+      // サインアウト
+      async function signOut() {
+        await supa.auth.signOut();
+        currentUser = null;
+        authState.textContent = '未ログイン';
+      }
+
+      // クラウド → ローカル
+      async function syncFromCloud() {
+        const { data, error } = await supa
+          .from('reviews')
+          .select('anime_id, rec, updated_at')
+          .order('updated_at', { ascending: false });
+        if (error) { console.warn(error); return; }
+        data.forEach(row => { state.recs[row.anime_id] = row.rec; });
+        save(LS, state.recs);
+      }
+
+      // ローカル → クラウド
+      async function saveReviewToCloud(animeId, rec) {
+        if (!currentUser) return;
+        await supa.from('reviews')
+          .upsert({ user_id: currentUser.id, anime_id: Number(animeId), rec, updated_at: new Date().toISOString() })
+          .select();
+      }
+
+      // 保存ボタンの上書き
+      const _origSaveHandler = btnSave.onclick;
+      btnSave.onclick = async () => {
+        if (typeof _origSaveHandler === 'function') {
+          _origSaveHandler(); // ローカル保存＋再描画
+          const id = state.editingId;
+          if (id && state.recs[id]) await saveReviewToCloud(id, state.recs[id]);
+        }
+      };
+
+      // ボタンイベント紐付け
+      btnSignUp?.addEventListener('click', signUp);
+      btnSignIn?.addEventListener('click', signIn);
+      btnSignOut?.addEventListener('click', signOut);
+    </script>
+    <!-- ▲ Supabase ログイン＆同期スクリプト ▲ -->
+
 </body>
 
 </html>
