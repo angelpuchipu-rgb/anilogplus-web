@@ -17,11 +17,13 @@
     }
 
     .card {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #e5e7eb;
+      /* gray-200 */
       border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
     }
+
 
     .btn-ghost {
       background: rgba(0, 0, 0, 0.05);
@@ -51,19 +53,30 @@
     }
 
     .input,
-    .select,
+    select,
     textarea {
-      background: rgba(255, 255, 255, .06);
-      border: 1px solid rgba(255, 255, 255, .1);
+      background: #fff;
+      border: 1px solid #d1d5db;
+      /* gray-300 */
+      color: #111827;
+      /* gray-900 */
       padding: .6rem .8rem;
       border-radius: .9rem;
       outline: none;
-      width: 100%
+      width: 100%;
+    }
+
+    .input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #3b82f6;
+      /* blue-500 */
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .28);
     }
 
     select option {
-      color: #000;
-      background: #fff
+      color: #111827;
+      background: #fff;
     }
 
     .chip {
@@ -147,13 +160,35 @@
     .scrollbar-none::-webkit-scrollbar {
       display: none;
     }
+
+    /* header内のUIを白基調に */
+    header .btn-ghost {
+      background: rgba(255, 255, 255, .15);
+      color: #fff;
+    }
+
+    header .btn-ghost:hover {
+      background: rgba(255, 255, 255, .25);
+    }
+
+    header #netBadge {
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
+    }
+
+    /* rangeスライダーを見やすく */
+    input[type="range"] {
+      accent-color: #3b82f6;
+      /* blue-500 */
+      height: 6px;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 
 <body>
-  <header class="sticky top-0 z-50 border-b border-white/10 bg-[#050914]/80 backdrop-blur">
+  <header class="sticky top-0 z-50 bg-blue-700 text-white shadow">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <button id="homeBtn" class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center font-bold">A+</div>
@@ -276,7 +311,7 @@
 
             <div class="pt-2 border-t border-white/10"></div>
             <div class="grid sm:grid-cols-2 gap-3">
-              <label class="text-sm">ステータス
+              <label class="text-sm text-gray-700">ステータス
                 <select id="mStatus" class="select mt-1">
                   <option value="">未設定</option>
                   <option value="SEEN">見た</option>
