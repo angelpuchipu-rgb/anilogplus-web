@@ -196,6 +196,7 @@
       </button>
       <nav class="flex items-center gap-2 overflow-x-auto flex-nowrap scrollbar-none">
         <span id="netBadge" class="text-xs px-2 py-1 rounded bg-white/10">接続: 未検証</span>
+        <span id="authState">未ログイン</span>
         <button id="navHome" class="btn-ghost shrink-0">ホーム</button>
         <button class="btn-ghost shrink-0" onclick="switchView('reviews')">レビュー</button>
         <button class="btn-ghost shrink-0" onclick="switchView('tier')">Tier表</button>
@@ -205,6 +206,7 @@
           JSON読込
           <input id="fileImport" type="file" accept="application/json" class="hidden">
         </label>
+
 
 
       </nav>
@@ -855,9 +857,8 @@
             if (j.records) state.recs = j.records;
             if (j.tier) state.tier = j.tier;
             save(LS, state.recs); save(LS_TIER, state.tier);
-            renderReviews(); renderTier();
-            // お好みでカウンタ更新
-            if (typeof updateWatchedCounter === 'function') updateWatchedCounter();
+            if (typeof renderReviews === 'function') renderReviews();
+            if (typeof renderTier === 'function') renderTier();
             alert('読み込みました');
           } catch (err) {
             console.error(err);
@@ -866,9 +867,67 @@
         };
       }
 
+
     </script>
 
     <!-- ▲ Supabase ログイン＆同期スクリプト ▲ -->
+    <script>
+      // ユーティリティ
+      const $ = (id) => document.getElementById(id);
+
+      // 画面反映
+      function setAuthState(user) {
+        const s = $('authState');
+        if (!s) return;
+        s.textContent = user ? `ログイン中: ${user.email}` : '未ログイン';
+      }
+
+      // ページ読み込み時に現在のログイン状態を反映
+      (async () => {
+        const { data } = await supa.auth.getUser();
+        setAuthState(data.user || null);
+      })();
+
+      // 状態変化（メール確認後の戻りなど）も拾う
+      supa.auth.onAuthStateChange(async (_event, session) => {
+        setAuthState(session?.user || null);
+      });
+
+      // 新規登録
+      $('btnSignUp')?.addEventListener('click', async () => {
+        const email = $('authEmail')?.value.trim();
+        const password = $('authPass')?.value;
+        if (!email || !password) return alert('メールとパスワードを入力してください');
+        const { error } = await supa.auth.signUp({
+          email,
+          password,
+          options: {
+            // 認証メール後の戻り先（SupabaseのSite URLと一致させる）
+            emailRedirectTo: 'https://angelpuchipu-rgb.github.io/anilogplus-web/'
+          }
+        });
+        if (error) alert(error.message);
+        else alert('確認メールを送信しました。メール内のリンクを開いてください。');
+      });
+
+      // ログイン
+      $('btnSignIn')?.addEventListener('click', async () => {
+        const email = $('authEmail')?.value.trim();
+        const password = $('authPass')?.value;
+        if (!email || !password) return alert('メールとパスワードを入力してください');
+        const { data, error } = await supa.auth.signInWithPassword({ email, password });
+        if (error) return alert(error.message);
+        setAuthState(data.user);
+        // 必要ならクラウド→ローカル同期をここで
+        if (typeof syncFromCloud === 'function') await syncFromCloud();
+      });
+
+      // ログアウト
+      $('btnSignOut')?.addEventListener('click', async () => {
+        await supa.auth.signOut();
+        setAuthState(null);
+      });
+    </script>
 
 </body>
 
