@@ -791,12 +791,13 @@
         alert('保存しました');
       };
 
-      btnDelete.onclick = () => {
-        const id = state.editingId; if (!id) return;
-        if (confirm('このレビューを削除しますか？')) {
-          delete state.recs[id]; save(LS, state.recs); closeModal(); renderReviews();
-        }
+      btnWipe.onclick = async () => {
+        if (!confirm('全データを削除しますか？')) return;
+        await removeAllReviewsOfCurrentUser();
+        alert('削除しました');
+        switchView('search');
       };
+
 
       function renderReviews() {
         const fs = filterStatus.value,
@@ -919,6 +920,51 @@
           anime_id: animeId,
           rec_jsonb: rec
         };
+        // ===============================
+        // レビュー削除処理（クラウド同期対応）
+        // ===============================
+
+        // 1件削除（ローカル→クラウド）
+        async function removeReview(id) {
+          // ローカルから削除
+          delete state.recs[id];
+          save(LS, state.recs);
+          renderReviews();
+
+          // クラウドから削除
+          if (currentUser) {
+            const { error } = await supa
+              .from('reviews')
+              .delete()
+              .match({ user_id: currentUser.id, anime_id: Number(id) });
+
+            if (error) {
+              console.error('cloud delete error:', error);
+              alert('クラウド削除に失敗しました。通信状況を確認してください。');
+              await syncFromCloud(); // サーバーの真実を再読込
+            }
+          }
+        }
+
+        // 全削除（そのユーザーのレビューをすべて削除）
+        async function removeAllReviewsOfCurrentUser() {
+          if (currentUser) {
+            const { error } = await supa
+              .from('reviews')
+              .delete()
+              .eq('user_id', currentUser.id);
+            if (error) {
+              console.error('cloud wipe error:', error);
+              alert('クラウド全削除に失敗しました。');
+            }
+          }
+
+          // ローカルもクリア
+          state.recs = {};
+          save(LS, state.recs);
+          renderReviews();
+        }
+
 
         const { error } = await supa
           .from('reviews')
