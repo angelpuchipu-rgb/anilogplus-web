@@ -223,14 +223,6 @@
 
     <section id="view-search" class="space-y-4">
       <div class="card p-4 space-y-3">
-        <!-- レビュー統計 -->
-        <div id="reviewStats" class="text-center text-sm text-gray-700">
-          件数: 0　平均点: -
-        </div>
-
-        <!-- レビューを並べる入れ物 -->
-        <div id="reviewList" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-
         <div class="grid md:grid-cols-[1fr,260px] gap-3">
           <input id="q" class="input" placeholder="タイトル（例: 進撃の巨人 / NARUTO / 呪術廻戦）">
           <div class="flex gap-2">
@@ -848,6 +840,39 @@
         if (!listEl) return;
         listEl.innerHTML = '';
 
+        const tpl = document.getElementById('tpl-review').content;
+
+        rows.forEach(({ id, rec, m }) => {
+          const n = tpl.cloneNode(true);
+          const img = n.querySelector('img');
+          const metaEl = n.querySelector('[data-meta]');
+          const scoreEl = n.querySelector('[data-score]');
+          const commentEl = n.querySelector('[data-comment]');
+
+          // 画像・タイトルなどは cache が無ければ rec.meta を使用
+          const title =
+            m?.title?.native ||
+            rec.meta?.title ||
+            ('ID ' + id);
+
+          const cover =
+            m?.coverImage?.medium ||
+            m?.coverImage?.large ||
+            rec.meta?.cover ||
+            '';
+
+          img.src = cover;
+          img.alt = title;
+          img.onclick = () => openModal(id);
+
+          scoreEl.textContent = (rec.score ?? '-') + '';
+          metaEl.textContent = `${rec.meta?.seasonYear || ''} ${rec.meta?.season || ''} / ${rec.meta?.studio || '—'}`;
+          commentEl.textContent = rec.comment || '';
+
+          listEl.appendChild(n);
+        });
+
+
         // 以下：カードを並べる部分（元のコードのままでOK）
       }
 
@@ -918,23 +943,17 @@
           return;
         }
 
-        // DBの形 → 画面用の形に変換
-        const rows = (data || []).map(r => {
-          const rec = r.rec_jsonb || {};
-          return {
-            id: r.anime_id,
-            title: rec.title ?? '',
-            cover: rec.cover ?? '',
-            score: rec.score ?? null,
-            tags: rec.tags ?? [],
-            memo: rec.memo ?? ''
-          };
+        // ← ここがポイント：id→rec の連想オブジェクトに整形
+        const obj = {};
+        (data || []).forEach(r => {
+          obj[String(r.anime_id)] = r.rec_jsonb || {};
         });
 
-        state.recs = rows;
-        save(LS, state.recs);  // ローカルキャッシュ更新
-        renderReviews(state.recs);
+        state.recs = obj;
+        save(LS, state.recs);
+        renderReviews();
       }
+
 
 
 
