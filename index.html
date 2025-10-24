@@ -466,33 +466,34 @@
       if (seasonYear) vars.seasonYear = seasonYear;
 
       const query = `
-    query($page:Int,$perPage:Int,$search:String,$season:MediaSeason,$seasonYear:Int){
-      Page(page:$page,perPage:$perPage){
-        pageInfo{ currentPage hasNextPage }
-        media(
-          type: ANIME
-          search: $search
-          season: $season
-          seasonYear: $seasonYear
-          sort: POPULARITY_DESC
-        ){
-          id
-          title{ native romaji english }
-          coverImage{ large medium }
-          season
-          seasonYear
-          description(asHtml:false)
-          studios(isMain:true){ nodes{ name } }
-          characters(role:MAIN, perPage:6){
-            edges{
-              node{ name{ full } }
-              voiceActors(language:JAPANESE, perPage:1){ name{ full } }
-            }
+  query($page:Int,$perPage:Int,$search:String,$season:MediaSeason,$seasonYear:Int){
+    Page(page:$page,perPage:$perPage){
+      pageInfo{ currentPage hasNextPage }
+      media(
+        type: ANIME
+        search: $search
+        season: $season
+        seasonYear: $seasonYear
+        sort: POPULARITY_DESC
+      ){
+        id
+        title{ native romaji english }
+        coverImage{ large medium }
+        season
+        seasonYear
+        description(asHtml:false)
+        studios(isMain:true){ nodes{ name } }
+        characters(role:MAIN, perPage:6){
+          edges{
+            node{ name{ full } }
+            voiceActors(language:JAPANESE){ name{ full } }  // ← perPage を削除
           }
         }
       }
     }
-  `;
+  }
+`;
+
 
       const wrap = document.getElementById("results");
       const pager = document.getElementById("pager");
