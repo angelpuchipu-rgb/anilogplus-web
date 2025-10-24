@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja" class="dark">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -8,34 +9,168 @@
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    html, body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; background:#f7f8fa; color:#111827; }
-    .card{ background:#ffffff; border:1px solid #e5e7eb; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
-    .btn-ghost{ background:rgba(0,0,0,0.05); }
-    .btn{ background:#3F6EE6; box-shadow:0 10px 30px -12px rgba(91,140,255,.45) }
-    .btn:hover{ background:#5B8CFF }
-    .btn,.btn-ghost{ padding:.55rem 1rem; border-radius:.8rem; display:inline-flex; align-items:center; gap:.5rem }
-    .input,select,textarea{ background:#fff; border:1px solid #d1d5db; color:#111827; padding:.6rem .8rem; border-radius:.9rem; outline:none; width:100%; }
-    .input:focus,select:focus,textarea:focus{ border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.28); }
-    select option{ color:#111827; background:#fff; }
-    .chip{ border:1px solid rgba(255,255,255,.15); padding:.15rem .5rem; border-radius:9999px; font-size:.75rem; cursor:pointer }
-    .img-card{ background:#000; display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer }
-    .img-card img{ width:100%; height:100%; object-fit:cover }
-    .img-hint{ position:absolute; inset:auto 8px 8px auto; background:rgba(0,0,0,.55); padding:.25rem .5rem; border-radius:.5rem; font-size:.75rem; opacity:0; transition:.2s }
-    .img-card:hover .img-hint{ opacity:1 }
-    .score-circle{ display:inline-flex; align-items:center; justify-content:center; border-radius:9999px; font-weight:700; line-height:1; width:100px; height:100px }
-    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:100 }
-    .modal{ width:min(900px,88vw); max-height:86vh; overflow:auto }
-    .linklike{ color:#8ab4ff; cursor:pointer }
-    .review-img:hover .img-hint{ opacity:1; }
-    .scrollbar-none::-webkit-scrollbar{ display:none; }
-    header .btn-ghost{ background:rgba(255,255,255,.15); color:#fff; }
-    header .btn-ghost:hover{ background:rgba(255,255,255,.25); }
-    header #netBadge{ background:rgba(255,255,255,.18); color:#fff; }
-    input[type="range"]{ accent-color:#3b82f6; height:6px; }
+    html,
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      background: #f7f8fa;
+      color: #111827;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+    }
+
+    .btn-ghost {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .btn {
+      background: #3F6EE6;
+      box-shadow: 0 10px 30px -12px rgba(91, 140, 255, .45)
+    }
+
+    .btn:hover {
+      background: #5B8CFF
+    }
+
+    .btn,
+    .btn-ghost {
+      padding: .55rem 1rem;
+      border-radius: .8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    .input,
+    select,
+    textarea {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      color: #111827;
+      padding: .6rem .8rem;
+      border-radius: .9rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .28);
+    }
+
+    select option {
+      color: #111827;
+      background: #fff;
+    }
+
+    .chip {
+      border: 1px solid rgba(255, 255, 255, .15);
+      padding: .15rem .5rem;
+      border-radius: 9999px;
+      font-size: .75rem;
+      cursor: pointer
+    }
+
+    .img-card {
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer
+    }
+
+    .img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover
+    }
+
+    .img-hint {
+      position: absolute;
+      inset: auto 8px 8px auto;
+      background: rgba(0, 0, 0, .55);
+      padding: .25rem .5rem;
+      border-radius: .5rem;
+      font-size: .75rem;
+      opacity: 0;
+      transition: .2s
+    }
+
+    .img-card:hover .img-hint {
+      opacity: 1
+    }
+
+    .score-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      font-weight: 700;
+      line-height: 1;
+      width: 100px;
+      height: 100px
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100
+    }
+
+    .modal {
+      width: min(900px, 88vw);
+      max-height: 86vh;
+      overflow: auto
+    }
+
+    .linklike {
+      color: #8ab4ff;
+      cursor: pointer
+    }
+
+    .review-img:hover .img-hint {
+      opacity: 1;
+    }
+
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+
+    header .btn-ghost {
+      background: rgba(255, 255, 255, .15);
+      color: #fff;
+    }
+
+    header .btn-ghost:hover {
+      background: rgba(255, 255, 255, .25);
+    }
+
+    header #netBadge {
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
+    }
+
+    input[type="range"] {
+      accent-color: #3b82f6;
+      height: 6px;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
+
 <body>
   <header class="sticky top-0 z-50 bg-blue-700 text-white shadow">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -51,7 +186,8 @@
         <button class="btn-ghost shrink-0" onclick="switchView('tier')">Tier表</button>
         <button class="btn-ghost shrink-0" onclick="switchView('settings')">設定</button>
         <button id="btnExport" class="btn shrink-0">JSON書出し</button>
-        <label class="btn-ghost cursor-pointer shrink-0">JSON読込<input id="fileImport" type="file" accept="application/json" class="hidden"></label>
+        <label class="btn-ghost cursor-pointer shrink-0">JSON読込<input id="fileImport" type="file"
+            accept="application/json" class="hidden"></label>
       </nav>
     </div>
   </header>
@@ -69,7 +205,9 @@
         <div class="grid md:grid-cols-[1fr,260px] gap-3">
           <input id="q" class="input" placeholder="タイトル（例: 進撃の巨人 / NARUTO / 呪術廻戦）">
           <div class="flex gap-2">
-            <select id="era" class="select w-full"><option value="">年代別検索（例: 2024 秋）</option></select>
+            <select id="era" class="select w-full">
+              <option value="">年代別検索（例: 2024 秋）</option>
+            </select>
             <button id="btnSearch" class="btn shrink-0">検索</button>
           </div>
         </div>
@@ -218,7 +356,8 @@
   <template id="tpl-result">
     <div class="card overflow-hidden">
       <div class="img-card bg-gray-900 rounded-lg overflow-hidden" style="aspect-ratio:2/3;">
-        <img loading="lazy" decoding="async" class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105" alt="アニメ画像">
+        <img loading="lazy" decoding="async"
+          class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105" alt="アニメ画像">
         <div class="img-hint">クリックして評価</div>
       </div>
       <div class="p-3 space-y-2">
@@ -237,8 +376,10 @@
   </template>
 
   <template id="tpl-review">
-    <div class="card flex items-start p-4 rounded-lg bg-neutral-900/60 shadow-md hover:shadow-lg transition-shadow duration-300">
-      <div class="w-24 h-32 shrink-0 overflow-hidden rounded-lg shadow-md bg-gray-900 relative review-img cursor-pointer">
+    <div
+      class="card flex items-start p-4 rounded-lg bg-neutral-900/60 shadow-md hover:shadow-lg transition-shadow duration-300">
+      <div
+        class="w-24 h-32 shrink-0 overflow-hidden rounded-lg shadow-md bg-gray-900 relative review-img cursor-pointer">
         <img class="w-full h-full object-cover transition-transform duration-300 hover:scale-105 cursor-pointer">
         <div class="img-hint">クリックして編集</div>
       </div>
@@ -254,102 +395,171 @@
 
   <template id="tpl-tier-row">
     <div class="flex gap-2">
-      <div class="flex items-center gap-2 bg-white/10 rounded px-2"><input class="bg-transparent outline-none w-12 font-bold" value="S"><button data-del class="text-gray-500">✕</button></div>
-      <div data-zone class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 flex-1 bg-white/5 rounded p-2 border border-white/10"></div>
+      <div class="flex items-center gap-2 bg-white/10 rounded px-2"><input
+          class="bg-transparent outline-none w-12 font-bold" value="S"><button data-del class="text-gray-500">✕</button>
+      </div>
+      <div data-zone
+        class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 flex-1 bg-white/5 rounded p-2 border border-white/10">
+      </div>
     </div>
   </template>
 
   <!-- ===== アプリ本体（検索/レビュー/Tier） ===== -->
   <script>
-    const LS='anilogplus_v1', LS_TIER='anilogplus_tier';
-    const state={ cache:{}, recs:load(LS)||{}, tier:load(LS_TIER)||[], provider:'anilist', editingId:null };
-    function save(k,v){ localStorage.setItem(k,JSON.stringify(v)) }
-    function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-    function jpSeason(s){ return ({WINTER:'冬',SPRING:'春',SUMMER:'夏',FALL:'秋'})[s]||s||'' }
-    function colorForScore(n){ const hue=Math.round((n/100)*120); return `hsl(${hue} 80% 40%)` }
-    function setCircle(el,n){ el.style.background=colorForScore(n); el.textContent=n; el.className='score-circle text-white' }
+    const LS = 'anilogplus_v1', LS_TIER = 'anilogplus_tier';
+    const state = { cache: {}, recs: load(LS) || {}, tier: load(LS_TIER) || [], provider: 'anilist', editingId: null };
+    function save(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
+    function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null') } catch { return null } }
+    function jpSeason(s) { return ({ WINTER: '冬', SPRING: '春', SUMMER: '夏', FALL: '秋' })[s] || s || '' }
+    function colorForScore(n) { const hue = Math.round((n / 100) * 120); return `hsl(${hue} 80% 40%)` }
+    function setCircle(el, n) { el.style.background = colorForScore(n); el.textContent = n; el.className = 'score-circle text-white' }
 
     // 年代リスト
-    (()=>{ const era=document.getElementById('era'); const seasons=['FALL','SUMMER','SPRING','WINTER']; for(let y=2025;y>=2000;y--){ for(const s of seasons){ if(y===2025&&s==='WINTER') continue; const o=document.createElement('option'); o.value=y+'-'+s; o.textContent=`${y} ${jpSeason(s)}`; era.appendChild(o);} } })();
+    (() => { const era = document.getElementById('era'); const seasons = ['FALL', 'SUMMER', 'SPRING', 'WINTER']; for (let y = 2025; y >= 2000; y--) { for (const s of seasons) { if (y === 2025 && s === 'WINTER') continue; const o = document.createElement('option'); o.value = y + '-' + s; o.textContent = `${y} ${jpSeason(s)}`; era.appendChild(o); } } })();
 
-    function goHome(){ ['search','reviews','tier','settings'].forEach(id=>document.getElementById('view-'+id).classList.add('hidden')); document.getElementById('view-search').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
-    document.getElementById('homeBtn').onclick=goHome; document.getElementById('navHome').onclick=goHome;
+    function goHome() { ['search', 'reviews', 'tier', 'settings'].forEach(id => document.getElementById('view-' + id).classList.add('hidden')); document.getElementById('view-search').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    document.getElementById('homeBtn').onclick = goHome; document.getElementById('navHome').onclick = goHome;
 
-    const q=document.getElementById('q'), era=document.getElementById('era');
-    q.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); search(1) } });
-    era.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); search(1) } });
+    const q = document.getElementById('q'), era = document.getElementById('era');
+    q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); search(1) } });
+    era.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); search(1) } });
 
-    function switchView(v){
-      ['search','reviews','tier','settings'].forEach(id=>document.getElementById('view-'+id).classList.toggle('hidden', id!==v));
-      if(v==='reviews') renderReviews();
-      if(v==='tier') renderTier();
+    function switchView(v) {
+      ['search', 'reviews', 'tier', 'settings'].forEach(id => document.getElementById('view-' + id).classList.toggle('hidden', id !== v));
+      if (v === 'reviews') renderReviews();
+      if (v === 'tier') renderTier();
     }
 
     // 接続バッジ（AniList固定表示）
-    (function testConnections(){ const badge=document.getElementById('netBadge'); badge.textContent='接続: AniList（テスト省略）'; state.provider='anilist'; })();
+    (function testConnections() { const badge = document.getElementById('netBadge'); badge.textContent = '接続: AniList（テスト省略）'; state.provider = 'anilist'; })();
 
     // トレンド
-    async function loadTrending(){
-      const wrap=document.getElementById('trending'); wrap.innerHTML='<div class="text-gray-500">読み込み中…</div>';
-      try{
-        const query=`query{ Page(perPage:12){ media(type:ANIME,sort:TRENDING_DESC){ id title{native romaji} coverImage{medium large} season seasonYear } } }`;
-        const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
-        const j=await r.json(); const items=(j.data?.Page?.media||[]).map(mapFromAniList);
-        wrap.innerHTML=''; items.forEach(m=>{ const div=document.createElement('div'); div.className='cursor-pointer'; div.innerHTML=`<img src="${m.cover}" class="w-full h-28 object-contain bg-black/60 rounded"><div class="text-xs mt-1 line-clamp-2">${m.title}</div>`; div.onclick=()=>openModal(m.id); wrap.appendChild(div); });
-      }catch{ wrap.innerHTML='<div class="text-gray-500">取得に失敗しました</div>'; }
+    async function loadTrending() {
+      const wrap = document.getElementById('trending'); wrap.innerHTML = '<div class="text-gray-500">読み込み中…</div>';
+      try {
+        const query = `query{ Page(perPage:12){ media(type:ANIME,sort:TRENDING_DESC){ id title{native romaji} coverImage{medium large} season seasonYear } } }`;
+        const r = await fetch('https://graphql.anilist.co', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
+        const j = await r.json(); const items = (j.data?.Page?.media || []).map(mapFromAniList);
+        wrap.innerHTML = ''; items.forEach(m => { const div = document.createElement('div'); div.className = 'cursor-pointer'; div.innerHTML = `<img src="${m.cover}" class="w-full h-28 object-contain bg-black/60 rounded"><div class="text-xs mt-1 line-clamp-2">${m.title}</div>`; div.onclick = () => openModal(m.id); wrap.appendChild(div); });
+      } catch { wrap.innerHTML = '<div class="text-gray-500">取得に失敗しました</div>'; }
     }
     loadTrending();
 
     // 検索
-    async function search(page=1){
-      const kw=q.value.trim(); const eraVal=era.value; let season,seasonYear; if(eraVal){ const [y,s]=eraVal.split('-'); seasonYear=Number(y); season=s; }
-      try{
-        const query=`query($page:Int,$perPage:Int,$search:String,$season:MediaSeason,$seasonYear:Int){
-          Page(page:$page,perPage:$perPage){
-            pageInfo{currentPage hasNextPage}
-            media(type:ANIME,search:$search,season:$season,seasonYear:$seasonYear,sort:POPULARITY_DESC){
-              id title{native romaji english} coverImage{large medium} season seasonYear description(asHtml:false)
-              studios(isMain:true){nodes{name}}
-              characters(role:MAIN, perPage:6){edges{node{name{full}} voiceActors(language:JAPANESE, perPage:1){name{full}}}}
+    // 置き換え版: 検索
+    async function search(page = 1) {
+      const kw = q.value.trim();
+      const eraVal = era.value;
+
+      // era "YYYY-SEASON" を分解
+      let season, seasonYear;
+      if (eraVal) {
+        const [y, s] = eraVal.split("-");
+        seasonYear = Number(y);
+        season = s; // 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL'
+      }
+
+      // 変数は「あるものだけ」詰める
+      const vars = { page, perPage: 18 };
+      if (kw) vars.search = kw;
+      if (season) vars.season = season;
+      if (seasonYear) vars.seasonYear = seasonYear;
+
+      const query = `
+    query($page:Int,$perPage:Int,$search:String,$season:MediaSeason,$seasonYear:Int){
+      Page(page:$page,perPage:$perPage){
+        pageInfo{ currentPage hasNextPage }
+        media(
+          type: ANIME
+          search: $search
+          season: $season
+          seasonYear: $seasonYear
+          sort: POPULARITY_DESC
+        ){
+          id
+          title{ native romaji english }
+          coverImage{ large medium }
+          season
+          seasonYear
+          description(asHtml:false)
+          studios(isMain:true){ nodes{ name } }
+          characters(role:MAIN, perPage:6){
+            edges{
+              node{ name{ full } }
+              voiceActors(language:JAPANESE, perPage:1){ name{ full } }
             }
           }
-        }`;
-        const r=await fetch('https://graphql.anilist.co',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,variables:{page,perPage:18,search:kw||undefined,season,seasonYear}})});
-        const {data}=await r.json(); const items=(data?.Page?.media||[]).map(mapFromAniList); const pageInfo=data?.Page?.pageInfo||{currentPage:1,hasNextPage:false};
-        renderResults(items,pageInfo); document.getElementById('netBadge').textContent='接続: AniList';
-      }catch(e){ document.getElementById('results').innerHTML='<div class="text-white/70">検索に失敗しました。</div>'; }
+        }
+      }
     }
-    document.getElementById('btnSearch').onclick=()=>search(1);
-    document.getElementById('btnClear').onclick=()=>{ q.value=''; era.value=''; search(1) };
+  `;
 
-    function mapFromAniList(m){ state.cache[m.id]=m; return { id:m.id, title:m.title.native||m.title.romaji||m.title.english, cover:m.coverImage.large||m.coverImage.medium, season:`${m.seasonYear||''} ${jpSeason(m.season)}`.trim(), desc:(m.description||'').replace(/<br>/g,' ').replace(/<\/?i>/g,''), chips:[{label:(m.studios?.nodes?.[0]?.name)||'—',kind:'studio'}].slice(0,5) }; }
+      const wrap = document.getElementById("results");
+      const pager = document.getElementById("pager");
+      wrap.innerHTML = '<div class="text-gray-500">検索中…</div>';
+      pager.innerHTML = "";
 
-    function renderResults(list,pageInfo){
-      const wrap=document.getElementById('results'); wrap.innerHTML='';
-      const tpl=document.getElementById('tpl-result').content;
-      list.forEach(m=>{
-        const n=tpl.cloneNode(true); const img=n.querySelector('img'); img.src=m.cover; img.alt=m.title; img.onclick=()=>openModal(m.id);
-        n.querySelector('.font-semibold').textContent=m.title;
-        async function translateToJapanese(text){ const maxLength=400; const truncated=text.length>maxLength?text.slice(0,maxLength)+'...':text; try{ const res=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data=await res.json(); return data.responseData.translatedText||truncated; }catch{ return truncated; } }
-        (async()=>{ n.querySelector('[data-desc]').textContent=await translateToJapanese(m.desc||''); })();
-        const chips=n.querySelector('[data-chips]'); (m.chips||[]).forEach(t=>{ const s=document.createElement('span'); s.className='chip'; s.textContent=t.label; s.onclick=()=>{ q.value=t.label; search(1); }; chips.appendChild(s); });
-        n.querySelector('[data-edit]').onclick=()=>openModal(m.id); n.querySelector('[data-tier]').onclick=()=>addToTier(m.id);
+      try {
+        const r = await fetch("https://graphql.anilist.co", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }, // Accept は省略
+          body: JSON.stringify({ query, variables: vars }),
+        });
+
+        const j = await r.json();
+
+        if (!r.ok || j.errors) {
+          // 400 などの時はメッセージを見せる & トレンドにフォールバック
+          const msg = j?.errors?.[0]?.message || `HTTP ${r.status}`;
+          console.warn("AniList search error:", msg);
+          wrap.innerHTML =
+            `<div class="text-white/70">検索に失敗しました（${msg}）。<br>「流行りのアニメ」の更新で代替表示できます。</div>`;
+          return;
+        }
+
+        const pageInfo = j.data?.Page?.pageInfo || { currentPage: 1, hasNextPage: false };
+        const items = (j.data?.Page?.media || []).map(mapFromAniList);
+
+        renderResults(items, pageInfo);
+        document.getElementById("netBadge").textContent = "接続: AniList";
+      } catch (e) {
+        console.error(e);
+        wrap.innerHTML =
+          '<div class="text-white/70">検索に失敗しました（ネットワークエラー）。</div>';
+      }
+    }
+
+    document.getElementById('btnSearch').onclick = () => search(1);
+    document.getElementById('btnClear').onclick = () => { q.value = ''; era.value = ''; search(1) };
+
+    function mapFromAniList(m) { state.cache[m.id] = m; return { id: m.id, title: m.title.native || m.title.romaji || m.title.english, cover: m.coverImage.large || m.coverImage.medium, season: `${m.seasonYear || ''} ${jpSeason(m.season)}`.trim(), desc: (m.description || '').replace(/<br>/g, ' ').replace(/<\/?i>/g, ''), chips: [{ label: (m.studios?.nodes?.[0]?.name) || '—', kind: 'studio' }].slice(0, 5) }; }
+
+    function renderResults(list, pageInfo) {
+      const wrap = document.getElementById('results'); wrap.innerHTML = '';
+      const tpl = document.getElementById('tpl-result').content;
+      list.forEach(m => {
+        const n = tpl.cloneNode(true); const img = n.querySelector('img'); img.src = m.cover; img.alt = m.title; img.onclick = () => openModal(m.id);
+        n.querySelector('.font-semibold').textContent = m.title;
+        async function translateToJapanese(text) { const maxLength = 400; const truncated = text.length > maxLength ? text.slice(0, maxLength) + '...' : text; try { const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data = await res.json(); return data.responseData.translatedText || truncated; } catch { return truncated; } }
+        (async () => { n.querySelector('[data-desc]').textContent = await translateToJapanese(m.desc || ''); })();
+        const chips = n.querySelector('[data-chips]'); (m.chips || []).forEach(t => { const s = document.createElement('span'); s.className = 'chip'; s.textContent = t.label; s.onclick = () => { q.value = t.label; search(1); }; chips.appendChild(s); });
+        n.querySelector('[data-edit]').onclick = () => openModal(m.id); n.querySelector('[data-tier]').onclick = () => addToTier(m.id);
         wrap.appendChild(n);
       });
-      const pager=document.getElementById('pager'); pager.innerHTML=''; const prev=document.createElement('button'); prev.className='btn-ghost'; prev.textContent='« 前'; prev.disabled=pageInfo.currentPage<=1; prev.onclick=()=>search(pageInfo.currentPage-1); const next=document.createElement('button'); next.className='btn-ghost'; next.textContent='次 »'; next.disabled=!pageInfo.hasNextPage; next.onclick=()=>search(pageInfo.currentPage+1); pager.append(prev,next);
+      const pager = document.getElementById('pager'); pager.innerHTML = ''; const prev = document.createElement('button'); prev.className = 'btn-ghost'; prev.textContent = '« 前'; prev.disabled = pageInfo.currentPage <= 1; prev.onclick = () => search(pageInfo.currentPage - 1); const next = document.createElement('button'); next.className = 'btn-ghost'; next.textContent = '次 »'; next.disabled = !pageInfo.hasNextPage; next.onclick = () => search(pageInfo.currentPage + 1); pager.append(prev, next);
     }
 
     // モーダルOpen
-    async function fetchRelationsAniList(id){ console.log('fetchRelationsAniList は現在未使用です（ダミー定義）'); return []; }
-    async function fetchRelationsJikan(id){ try{ const r=await fetch(`https://api.jikan.moe/v4/anime/${id}/relations`); const j=await r.json(); const edges=j.data||[]; const entries=edges.filter(e=>e.relation==='Prequel'||e.relation==='Sequel').flatMap(e=>e.entry||[]); return entries.map(e=>({id:e.mal_id,title:{native:e.name},seasonYear:null,season:null,coverImage:{medium:''}})); }catch{ return []; } }
+    async function fetchRelationsAniList(id) { console.log('fetchRelationsAniList は現在未使用です（ダミー定義）'); return []; }
+    async function fetchRelationsJikan(id) { try { const r = await fetch(`https://api.jikan.moe/v4/anime/${id}/relations`); const j = await r.json(); const edges = j.data || []; const entries = edges.filter(e => e.relation === 'Prequel' || e.relation === 'Sequel').flatMap(e => e.entry || []); return entries.map(e => ({ id: e.mal_id, title: { native: e.name }, seasonYear: null, season: null, coverImage: { medium: '' } })); } catch { return []; } }
 
-    function openModal(id){
-      state.editingId=id;
-      let m=state.cache[id];
-      const rec=state.recs[id]||{score:80};
-      if(!m && rec.meta){
-        m={ title:{native:rec.meta.title}, coverImage:{large:rec.meta.cover, medium:rec.meta.cover}, seasonYear:rec.meta.seasonYear, season:rec.meta.season, description:rec.meta.description, studios:{nodes:[{name:rec.meta.studio||'—'}]} };
-        state.cache[id]=m;
+    function openModal(id) {
+      state.editingId = id;
+      let m = state.cache[id];
+      const rec = state.recs[id] || { score: 80 };
+      if (!m && rec.meta) {
+        m = { title: { native: rec.meta.title }, coverImage: { large: rec.meta.cover, medium: rec.meta.cover }, seasonYear: rec.meta.seasonYear, season: rec.meta.season, description: rec.meta.description, studios: { nodes: [{ name: rec.meta.studio || '—' }] } };
+        state.cache[id] = m;
       }
 
       mCover.src = m?.coverImage?.large || m?.coverImage?.medium || rec?.meta?.cover || '';
@@ -357,70 +567,70 @@
 
       // 削除ハンドラ（毎回バインド）
       btnDelete.onclick = async () => {
-        if(!state.editingId) return;
-        if(!confirm('このレビューを削除しますか？')) return;
+        if (!state.editingId) return;
+        if (!confirm('このレビューを削除しますか？')) return;
         await removeReview(state.editingId);
         closeModal();
         await syncFromCloud(); // 念のため
       };
 
-      mTitle.textContent = m?.title?.native || m?.title?.romaji || m?.title?.english || ('ID '+id);
-      mMeta.textContent  = `${m?.seasonYear||''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name)||'—'}`;
-      async function translateToJapanese(text){ const maxLength=400; const truncated=text.length>maxLength?text.slice(0,maxLength)+'...':text; try{ const res=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data=await res.json(); return data.responseData.translatedText||truncated; }catch{ return text; } }
-      (async()=>{ mDesc.textContent = await translateToJapanese(m?.description||''); })();
+      mTitle.textContent = m?.title?.native || m?.title?.romaji || m?.title?.english || ('ID ' + id);
+      mMeta.textContent = `${m?.seasonYear || ''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name) || '—'}`;
+      async function translateToJapanese(text) { const maxLength = 400; const truncated = text.length > maxLength ? text.slice(0, maxLength) + '...' : text; try { const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data = await res.json(); return data.responseData.translatedText || truncated; } catch { return text; } }
+      (async () => { mDesc.textContent = await translateToJapanese(m?.description || ''); })();
 
       // 既定は「見た」
       mStatus.value = rec.status || 'SEEN';
       mScore.value = rec.score || 80; mScoreInput.value = rec.score || 80; setCircle(mScoreCircle, rec.score || 80);
-      mTags.value = (rec.tags||[]).join(', ');
+      mTags.value = (rec.tags || []).join(', ');
       mComment.value = rec.comment || '';
-      overlay.style.display='flex';
+      overlay.style.display = 'flex';
 
-      (async()=>{
-        const rightWrap=document.getElementById('mRelated');
-        const rightSec=document.getElementById('mRelatedWrap');
-        const leftSec=document.getElementById('mRelatedLeft');
-        const leftChips=document.getElementById('mRelatedChipsLeft');
-        if(rightWrap) rightWrap.innerHTML=''; if(leftChips) leftChips.innerHTML=''; if(leftSec) leftSec.classList.add('hidden');
+      (async () => {
+        const rightWrap = document.getElementById('mRelated');
+        const rightSec = document.getElementById('mRelatedWrap');
+        const leftSec = document.getElementById('mRelatedLeft');
+        const leftChips = document.getElementById('mRelatedChipsLeft');
+        if (rightWrap) rightWrap.innerHTML = ''; if (leftChips) leftChips.innerHTML = ''; if (leftSec) leftSec.classList.add('hidden');
 
-        let list=[];
-        if(state.provider==='anilist'){ list=await fetchRelationsAniList(id); }
-        else { list=await fetchRelationsJikan(id); }
+        let list = [];
+        if (state.provider === 'anilist') { list = await fetchRelationsAniList(id); }
+        else { list = await fetchRelationsJikan(id); }
 
-        if(Array.isArray(list)&&list.length){
-          list.sort((a,b)=>(b.seasonYear||0)-(a.seasonYear||0));
-          if(leftSec) leftSec.classList.remove('hidden');
-          list.forEach(x=>{
-            const b=document.createElement('button'); b.className='chip';
-            b.textContent=(x.title?.native||x.title?.romaji||'')+(x.seasonYear?` ${x.seasonYear}`:'')+(x.season?` ${jpSeason(x.season)}`:'');
-            b.onclick=()=>openModal(x.id);
+        if (Array.isArray(list) && list.length) {
+          list.sort((a, b) => (b.seasonYear || 0) - (a.seasonYear || 0));
+          if (leftSec) leftSec.classList.remove('hidden');
+          list.forEach(x => {
+            const b = document.createElement('button'); b.className = 'chip';
+            b.textContent = (x.title?.native || x.title?.romaji || '') + (x.seasonYear ? ` ${x.seasonYear}` : '') + (x.season ? ` ${jpSeason(x.season)}` : '');
+            b.onclick = () => openModal(x.id);
             leftChips.appendChild(b);
-            state.cache[x.id]=Object.assign(state.cache[x.id]||{}, { title:x.title, coverImage:{medium:x.coverImage?.medium}, season:x.season, seasonYear:x.seasonYear });
+            state.cache[x.id] = Object.assign(state.cache[x.id] || {}, { title: x.title, coverImage: { medium: x.coverImage?.medium }, season: x.season, seasonYear: x.seasonYear });
           });
-          if(rightSec) rightSec.classList.add('hidden');
-        }else{ if(rightSec) rightSec.classList.add('hidden'); if(leftSec) leftSec.classList.add('hidden'); }
+          if (rightSec) rightSec.classList.add('hidden');
+        } else { if (rightSec) rightSec.classList.add('hidden'); if (leftSec) leftSec.classList.add('hidden'); }
       })();
     }
 
-    function closeModal(){ overlay.style.display='none'; }
-    mScore.oninput=e=>{ mScoreInput.value=e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
-    mScoreInput.oninput=e=>{ const v=Math.max(1,Math.min(100,Number(e.target.value)||1)); mScore.value=v; setCircle(mScoreCircle,v); }
-    btnClose.onclick=closeModal;
+    function closeModal() { overlay.style.display = 'none'; }
+    mScore.oninput = e => { mScoreInput.value = e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
+    mScoreInput.oninput = e => { const v = Math.max(1, Math.min(100, Number(e.target.value) || 1)); mScore.value = v; setCircle(mScoreCircle, v); }
+    btnClose.onclick = closeModal;
 
-    btnSave.onclick=async()=>{
-      const id=state.editingId; if(!id) return;
-      const m=state.cache[id]||{};
-      const meta={
-        title:m.title?.native || m.title?.romaji || m.title?.english || ('ID '+id),
-        cover:m.coverImage?.large || m.coverImage?.medium || '',
-        studio:m.studios?.nodes?.[0]?.name || '—',
-        seasonYear:m.seasonYear || '',
-        season:m.season || '',
-        description:m.description || ''
+    btnSave.onclick = async () => {
+      const id = state.editingId; if (!id) return;
+      const m = state.cache[id] || {};
+      const meta = {
+        title: m.title?.native || m.title?.romaji || m.title?.english || ('ID ' + id),
+        cover: m.coverImage?.large || m.coverImage?.medium || '',
+        studio: m.studios?.nodes?.[0]?.name || '—',
+        seasonYear: m.seasonYear || '',
+        season: m.season || '',
+        description: m.description || ''
       };
-      const tags=mTags.value.split(',').map(s=>s.trim()).filter(Boolean);
-      const rec={ status:mStatus.value, score:Number(mScore.value), tags, comment:mComment.value, updatedAt:Date.now(), meta };
-      state.recs[id]=rec; save(LS,state.recs);
+      const tags = mTags.value.split(',').map(s => s.trim()).filter(Boolean);
+      const rec = { status: mStatus.value, score: Number(mScore.value), tags, comment: mComment.value, updatedAt: Date.now(), meta };
+      state.recs[id] = rec; save(LS, state.recs);
       await saveReviewToCloud(id, rec);
       await syncFromCloud();  // 即反映
       closeModal();
@@ -428,51 +638,51 @@
     };
 
     // レビュー一覧描画
-    function renderReviews(){
-      const fs=filterStatus.value, ft=(filterTag.value||'').toLowerCase(), sb=sortBy.value;
-      let rows=Object.entries(state.recs).map(([id,rec])=>({ id:Number(id), rec, m: state.cache[id] || rec.meta? {title:{native:rec.meta?.title}, coverImage:{medium:rec.meta?.cover}} : {} }));
-      rows = rows.filter(r=>!fs || r.rec.status===fs).filter(r=>!ft || (r.rec.tags||[]).some(t=>t.toLowerCase().includes(ft)));
-      rows.sort((a,b)=> sb==='score' ? (b.rec.score||0)-(a.rec.score||0) : sb==='title' ? (a.m?.title?.native||a.rec.meta?.title||'').localeCompare(b.m?.title?.native||b.rec.meta?.title||'') : 0);
+    function renderReviews() {
+      const fs = filterStatus.value, ft = (filterTag.value || '').toLowerCase(), sb = sortBy.value;
+      let rows = Object.entries(state.recs).map(([id, rec]) => ({ id: Number(id), rec, m: state.cache[id] || rec.meta ? { title: { native: rec.meta?.title }, coverImage: { medium: rec.meta?.cover } } : {} }));
+      rows = rows.filter(r => !fs || r.rec.status === fs).filter(r => !ft || (r.rec.tags || []).some(t => t.toLowerCase().includes(ft)));
+      rows.sort((a, b) => sb === 'score' ? (b.rec.score || 0) - (a.rec.score || 0) : sb === 'title' ? (a.m?.title?.native || a.rec.meta?.title || '').localeCompare(b.m?.title?.native || b.rec.meta?.title || '') : 0);
 
-      const avg = rows.length ? (rows.reduce((s,r)=>s+(r.rec.score||0),0)/rows.length).toFixed(1) : '-';
-      const statsEl=document.getElementById('reviewStats'); if(statsEl) statsEl.textContent=`件数: ${rows.length}　平均点: ${avg}`;
-      const countEl=document.getElementById('reviewCount'); if(countEl) countEl.textContent=rows.length;
+      const avg = rows.length ? (rows.reduce((s, r) => s + (r.rec.score || 0), 0) / rows.length).toFixed(1) : '-';
+      const statsEl = document.getElementById('reviewStats'); if (statsEl) statsEl.textContent = `件数: ${rows.length}　平均点: ${avg}`;
+      const countEl = document.getElementById('reviewCount'); if (countEl) countEl.textContent = rows.length;
 
-      const listEl=document.getElementById('reviewList'); if(!listEl) return; listEl.innerHTML='';
-      const tpl=document.getElementById('tpl-review').content;
+      const listEl = document.getElementById('reviewList'); if (!listEl) return; listEl.innerHTML = '';
+      const tpl = document.getElementById('tpl-review').content;
 
-      rows.forEach(({id,rec,m})=>{
-        const n=tpl.cloneNode(true);
-        const img=n.querySelector('img'), metaEl=n.querySelector('[data-meta]'), scoreEl=n.querySelector('[data-score]'), commentEl=n.querySelector('[data-comment]');
-        const title=m?.title?.native || rec.meta?.title || ('ID '+id);
-        const cover=m?.coverImage?.medium || m?.coverImage?.large || rec.meta?.cover || '';
-        img.src=cover; img.alt=title; img.onclick=()=>openModal(id);
-        scoreEl.textContent=(rec.score ?? '-') + '';
-        metaEl.textContent=`${rec.meta?.seasonYear||''} ${rec.meta?.season||''} / ${rec.meta?.studio||'—'}`;
-        commentEl.textContent=rec.comment||'';
+      rows.forEach(({ id, rec, m }) => {
+        const n = tpl.cloneNode(true);
+        const img = n.querySelector('img'), metaEl = n.querySelector('[data-meta]'), scoreEl = n.querySelector('[data-score]'), commentEl = n.querySelector('[data-comment]');
+        const title = m?.title?.native || rec.meta?.title || ('ID ' + id);
+        const cover = m?.coverImage?.medium || m?.coverImage?.large || rec.meta?.cover || '';
+        img.src = cover; img.alt = title; img.onclick = () => openModal(id);
+        scoreEl.textContent = (rec.score ?? '-') + '';
+        metaEl.textContent = `${rec.meta?.seasonYear || ''} ${rec.meta?.season || ''} / ${rec.meta?.studio || '—'}`;
+        commentEl.textContent = rec.comment || '';
         listEl.appendChild(n);
       });
     }
 
-    filterStatus.onchange=renderReviews;
-    filterTag.oninput=()=>{ clearTimeout(window.__ft); window.__ft=setTimeout(renderReviews,250) };
-    sortBy.onchange=renderReviews;
+    filterStatus.onchange = renderReviews;
+    filterTag.oninput = () => { clearTimeout(window.__ft); window.__ft = setTimeout(renderReviews, 250) };
+    sortBy.onchange = renderReviews;
 
     // Tier
-    function ensureTier(){ if(!state.tier.length) state.tier=[{label:'S',items:[]},{label:'A',items:[]},{label:'B',items:[]},{label:'C',items:[]}] }
-    function renderTier(){ ensureTier(); tierBoard.innerHTML=''; state.tier.forEach((row,i)=>{ const t=document.getElementById('tpl-tier-row').content; const n=t.cloneNode(true); const input=n.querySelector('input'); input.value=row.label; input.onchange=()=>{ row.label=input.value; save(LS_TIER,state.tier) }; n.querySelector('[data-del]').onclick=()=>{ state.tier.splice(i,1); save(LS_TIER,state.tier); renderTier() }; const zone=n.querySelector('[data-zone]'); row.items.forEach(id=>{ const m=state.cache[id]||state.recs[id]?.meta? {coverImage:{medium:state.recs[id].meta.cover}, title:{native:state.recs[id].meta.title}} : null; const card=document.createElement('div'); card.className='rounded overflow-hidden border border-white/10 bg-black/40'; card.dataset.id=id; card.innerHTML=`<img src="${m?.coverImage?.medium||''}" class="w-full h-32 object-contain bg-black/60"><div class="p-2 text-xs">${m?.title?.native||('ID '+id)}</div>`; zone.appendChild(card) }); new Sortable(zone,{group:'tier',animation:150,onAdd:saveTierFromDOM,onUpdate:saveTierFromDOM,onRemove:saveTierFromDOM}); tierBoard.appendChild(n); }); }
-    function saveTierFromDOM(){ const rows=[...document.querySelectorAll('#tierBoard [data-zone]')]; state.tier=rows.map((zone,i)=>({label:document.querySelectorAll('#tierBoard input')[i].value, items:[...zone.children].map(el=>Number(el.dataset.id))})); save(LS_TIER,state.tier); }
-    function addToTier(id){ ensureTier(); if(!state.tier[0].items.includes(id)){ state.tier[0].items.push(id); save(LS_TIER,state.tier); renderTier(); } }
-    tierAdd.onclick=()=>{ state.tier.push({label:'新段',items:[]}); save(LS_TIER,state.tier); renderTier() };
-    tierReset.onclick=()=>{ if(confirm('Tier表を空にしますか？')){ state.tier=[]; save(LS_TIER,state.tier); renderTier() } };
-    tierPng.onclick=async()=>{ const canvas=await html2canvas(tierBoard,{backgroundColor:'#050914',scale:2}); const a=document.createElement('a'); a.download='anilogplus-tier.png'; a.href=canvas.toDataURL('image/png'); a.click(); };
+    function ensureTier() { if (!state.tier.length) state.tier = [{ label: 'S', items: [] }, { label: 'A', items: [] }, { label: 'B', items: [] }, { label: 'C', items: [] }] }
+    function renderTier() { ensureTier(); tierBoard.innerHTML = ''; state.tier.forEach((row, i) => { const t = document.getElementById('tpl-tier-row').content; const n = t.cloneNode(true); const input = n.querySelector('input'); input.value = row.label; input.onchange = () => { row.label = input.value; save(LS_TIER, state.tier) }; n.querySelector('[data-del]').onclick = () => { state.tier.splice(i, 1); save(LS_TIER, state.tier); renderTier() }; const zone = n.querySelector('[data-zone]'); row.items.forEach(id => { const m = state.cache[id] || state.recs[id]?.meta ? { coverImage: { medium: state.recs[id].meta.cover }, title: { native: state.recs[id].meta.title } } : null; const card = document.createElement('div'); card.className = 'rounded overflow-hidden border border-white/10 bg-black/40'; card.dataset.id = id; card.innerHTML = `<img src="${m?.coverImage?.medium || ''}" class="w-full h-32 object-contain bg-black/60"><div class="p-2 text-xs">${m?.title?.native || ('ID ' + id)}</div>`; zone.appendChild(card) }); new Sortable(zone, { group: 'tier', animation: 150, onAdd: saveTierFromDOM, onUpdate: saveTierFromDOM, onRemove: saveTierFromDOM }); tierBoard.appendChild(n); }); }
+    function saveTierFromDOM() { const rows = [...document.querySelectorAll('#tierBoard [data-zone]')]; state.tier = rows.map((zone, i) => ({ label: document.querySelectorAll('#tierBoard input')[i].value, items: [...zone.children].map(el => Number(el.dataset.id)) })); save(LS_TIER, state.tier); }
+    function addToTier(id) { ensureTier(); if (!state.tier[0].items.includes(id)) { state.tier[0].items.push(id); save(LS_TIER, state.tier); renderTier(); } }
+    tierAdd.onclick = () => { state.tier.push({ label: '新段', items: [] }); save(LS_TIER, state.tier); renderTier() };
+    tierReset.onclick = () => { if (confirm('Tier表を空にしますか？')) { state.tier = []; save(LS_TIER, state.tier); renderTier() } };
+    tierPng.onclick = async () => { const canvas = await html2canvas(tierBoard, { backgroundColor: '#050914', scale: 2 }); const a = document.createElement('a'); a.download = 'anilogplus-tier.png'; a.href = canvas.toDataURL('image/png'); a.click(); };
 
     // JSON出力/読み込み
-    btnExport.onclick=()=>{ const blob=new Blob([JSON.stringify({records:state.recs,tier:state.tier,version:4},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.download='anilogplus-data.json'; a.href=URL.createObjectURL(blob); a.click(); };
-    fileImport.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const t=await f.text(); const j=JSON.parse(t); if(j.records) state.recs=j.records; if(j.tier) state.tier=j.tier; save(LS,state.recs); save(LS_TIER,state.tier); alert('読み込みました'); renderReviews(); renderTier() }catch{ alert('JSON形式が不正です') } };
+    btnExport.onclick = () => { const blob = new Blob([JSON.stringify({ records: state.recs, tier: state.tier, version: 4 }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.download = 'anilogplus-data.json'; a.href = URL.createObjectURL(blob); a.click(); };
+    fileImport.onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const t = await f.text(); const j = JSON.parse(t); if (j.records) state.recs = j.records; if (j.tier) state.tier = j.tier; save(LS, state.recs); save(LS_TIER, state.tier); alert('読み込みました'); renderReviews(); renderTier() } catch { alert('JSON形式が不正です') } };
 
     // ※ローカルだけ全削除（Supabase版は後段の関数を利用）
-    btnWipe.onclick=()=>{ if(confirm('本当に削除しますか？')){ localStorage.removeItem(LS); localStorage.removeItem(LS_TIER); state.recs={}; state.tier=[]; alert('削除しました'); renderReviews(); } };
+    btnWipe.onclick = () => { if (confirm('本当に削除しますか？')) { localStorage.removeItem(LS); localStorage.removeItem(LS_TIER); state.recs = {}; state.tier = []; alert('削除しました'); renderReviews(); } };
 
     switchView('search');
   </script>
@@ -481,88 +691,89 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // ★あなたの Supabase プロジェクト設定
-    const SUPA_URL  = "https://zrfrllgbsyttxmfvswfx.supabase.co";
+    const SUPA_URL = "https://zrfrllgbsyttxmfvswfx.supabase.co";
     const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnJsbGdic3l0dHhtZnZzd2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjI0NDAsImV4cCI6MjA3Njc5ODQ0MH0.yw7Ld1Q2e-ITOPlDlZR4WRUReZvRuIg8vt_bYYOenVs";
     const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
     let currentUser = null;
 
-    (async function initAuth(){
+    (async function initAuth() {
       const { data } = await supa.auth.getUser();
       currentUser = data.user || null;
-      const s=document.getElementById('authState');
-      if(s) s.textContent = currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
-      if(currentUser) await syncFromCloud();
+      const s = document.getElementById('authState');
+      if (s) s.textContent = currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
+      if (currentUser) await syncFromCloud();
     })();
 
     // 保存（Upsert）
-    async function saveReviewToCloud(animeId, rec){
-      if(!currentUser) return;
-      const payload={ user_id:currentUser.id, anime_id:animeId, rec_jsonb:rec };
-      const { error } = await supa.from('reviews').upsert(payload,{ onConflict:'user_id,anime_id' });
-      if(error) console.error('saveReviewToCloud error:', error);
+    async function saveReviewToCloud(animeId, rec) {
+      if (!currentUser) return;
+      const payload = { user_id: currentUser.id, anime_id: animeId, rec_jsonb: rec };
+      const { error } = await supa.from('reviews').upsert(payload, { onConflict: 'user_id,anime_id' });
+      if (error) console.error('saveReviewToCloud error:', error);
     }
 
     // 1件削除（ローカル→クラウド）
-    async function removeReview(id){
-      delete state.recs[id]; save(LS,state.recs); renderReviews();
-      if(currentUser){
-        const { error } = await supa.from('reviews').delete().match({ user_id:currentUser.id, anime_id:Number(id) });
-        if(error){ console.error('cloud delete error:',error); alert('クラウド削除に失敗しました。'); }
+    async function removeReview(id) {
+      delete state.recs[id]; save(LS, state.recs); renderReviews();
+      if (currentUser) {
+        const { error } = await supa.from('reviews').delete().match({ user_id: currentUser.id, anime_id: Number(id) });
+        if (error) { console.error('cloud delete error:', error); alert('クラウド削除に失敗しました。'); }
       }
     }
 
     // 全削除（クラウド→ローカル）
-    async function removeAllReviewsOfCurrentUser(){
-      if(currentUser){
-        const { error } = await supa.from('reviews').delete().eq('user_id',currentUser.id);
-        if(error){ console.error('cloud wipe error:',error); alert('クラウド全削除に失敗しました。'); }
+    async function removeAllReviewsOfCurrentUser() {
+      if (currentUser) {
+        const { error } = await supa.from('reviews').delete().eq('user_id', currentUser.id);
+        if (error) { console.error('cloud wipe error:', error); alert('クラウド全削除に失敗しました。'); }
       }
-      state.recs={}; save(LS,state.recs); renderReviews();
+      state.recs = {}; save(LS, state.recs); renderReviews();
     }
 
     // 同期（クラウド→ローカル）
-    async function syncFromCloud(){
-      if(!currentUser) return;
-      const { data, error } = await supa.from('reviews').select('anime_id, rec_jsonb').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
-      if(error){ console.error('syncFromCloud error:',error); return; }
-      const obj={}; (data||[]).forEach(r=>{ obj[String(r.anime_id)] = r.rec_jsonb || {}; });
-      state.recs=obj; save(LS,state.recs); renderReviews();
+    async function syncFromCloud() {
+      if (!currentUser) return;
+      const { data, error } = await supa.from('reviews').select('anime_id, rec_jsonb').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
+      if (error) { console.error('syncFromCloud error:', error); return; }
+      const obj = {}; (data || []).forEach(r => { obj[String(r.anime_id)] = r.rec_jsonb || {}; });
+      state.recs = obj; save(LS, state.recs); renderReviews();
     }
 
     // 画面のログイン状態表示
     const $ = id => document.getElementById(id);
-    function setAuthState(user){ const s=$('authState'); if(!s) return; s.textContent = user ? `ログイン中: ${user.email}` : '未ログイン'; }
+    function setAuthState(user) { const s = $('authState'); if (!s) return; s.textContent = user ? `ログイン中: ${user.email}` : '未ログイン'; }
 
     // 状態変化
     supa.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user || null;
       setAuthState(currentUser);
-      if(currentUser) await syncFromCloud();
+      if (currentUser) await syncFromCloud();
     });
 
     // 新規登録
-    $('btnSignUp')?.addEventListener('click', async()=>{
-      const email=$('authEmail')?.value.trim(), password=$('authPass')?.value;
-      if(!email||!password) return alert('メールとパスワードを入力してください');
-      const { error } = await supa.auth.signUp({ email, password, options:{ emailRedirectTo:'https://angelpuchipu-rgb.github.io/anilogplus-web/' }});
-      if(error) alert(error.message); else alert('確認メールを送信しました。メール内のリンクを開いてください。');
+    $('btnSignUp')?.addEventListener('click', async () => {
+      const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
+      if (!email || !password) return alert('メールとパスワードを入力してください');
+      const { error } = await supa.auth.signUp({ email, password, options: { emailRedirectTo: 'https://angelpuchipu-rgb.github.io/anilogplus-web/' } });
+      if (error) alert(error.message); else alert('確認メールを送信しました。メール内のリンクを開いてください。');
     });
 
     // ログイン
-    $('btnSignIn')?.addEventListener('click', async()=>{
-      const email=$('authEmail')?.value.trim(), password=$('authPass')?.value;
-      if(!email||!password) return alert('メールとパスワードを入力してください');
+    $('btnSignIn')?.addEventListener('click', async () => {
+      const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
+      if (!email || !password) return alert('メールとパスワードを入力してください');
       const { data, error } = await supa.auth.signInWithPassword({ email, password });
-      if(error) return alert(error.message);
+      if (error) return alert(error.message);
       setAuthState(data.user); await syncFromCloud();
     });
 
     // ログアウト
-    $('btnSignOut')?.addEventListener('click', async()=>{
+    $('btnSignOut')?.addEventListener('click', async () => {
       await supa.auth.signOut(); setAuthState(null);
-      state.recs={}; save(LS,state.recs); renderReviews();
+      state.recs = {}; save(LS, state.recs); renderReviews();
     });
   </script>
 </body>
+
 </html>
