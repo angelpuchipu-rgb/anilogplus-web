@@ -627,6 +627,18 @@
           || m?.coverImage?.medium
           || rec?.meta?.cover       // ← 追加
           || '';
+        // 「削除」ボタンの表示/非表示（既にあります）
+        document.getElementById('btnDelete').classList.toggle('hidden', !state.recs[id]);
+
+        // ここを追加：削除のイベントをバインド
+        btnDelete.onclick = async () => {
+          if (!state.editingId) return;
+          if (!confirm('このレビューを削除しますか？')) return;
+          await removeReview(state.editingId);
+          closeModal();
+          await syncFromCloud();  // 念のため直後に同期
+        };
+
 
         mTitle.textContent = m?.title?.native || m?.title?.romaji || m?.title?.english || ('ID ' + id);
         mMeta.textContent = `${m?.seasonYear || ''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name) || '—'}`;
@@ -793,10 +805,11 @@
 
       btnWipe.onclick = async () => {
         if (!confirm('全データを削除しますか？')) return;
-        await removeAllReviewsOfCurrentUser();
+        await removeAllReviewsOfCurrentUser(); // ← クラウドも削除
         alert('削除しました');
         switchView('search');
       };
+
 
 
       function renderReviews() {
@@ -924,14 +937,14 @@
         // レビュー削除処理（クラウド同期対応）
         // ===============================
 
-        // 1件削除（ローカル→クラウド）
+        // 1件削除（ローカル → クラウド）
         async function removeReview(id) {
-          // ローカルから削除
+          // ローカルを先に消す
           delete state.recs[id];
           save(LS, state.recs);
           renderReviews();
 
-          // クラウドから削除
+          // クラウドを削除
           if (currentUser) {
             const { error } = await supa
               .from('reviews')
@@ -941,12 +954,12 @@
             if (error) {
               console.error('cloud delete error:', error);
               alert('クラウド削除に失敗しました。通信状況を確認してください。');
-              await syncFromCloud(); // サーバーの真実を再読込
+              await syncFromCloud(); // サーバー側を再読込して整合
             }
           }
         }
 
-        // 全削除（そのユーザーのレビューをすべて削除）
+        // そのユーザーの全レビューを削除
         async function removeAllReviewsOfCurrentUser() {
           if (currentUser) {
             const { error } = await supa
@@ -958,12 +971,12 @@
               alert('クラウド全削除に失敗しました。');
             }
           }
-
           // ローカルもクリア
           state.recs = {};
           save(LS, state.recs);
           renderReviews();
         }
+
 
 
         const { error } = await supa
