@@ -1033,7 +1033,7 @@
         .upsert(payload, { onConflict: 'user_id,anime_id' });
 
       if (error) console.error('saveReviewToCloud error:', error);
-      }
+      // 重複していた不要な upsert 呼び出しを削除しました。
 
 
       // Supabase からレビューを同期
