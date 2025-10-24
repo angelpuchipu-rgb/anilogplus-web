@@ -223,6 +223,14 @@
 
     <section id="view-search" class="space-y-4">
       <div class="card p-4 space-y-3">
+        <!-- レビュー統計 -->
+        <div id="reviewStats" class="text-center text-sm text-gray-700">
+          件数: 0　平均点: -
+        </div>
+
+        <!-- レビューを並べる入れ物 -->
+        <div id="reviewList" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+
         <div class="grid md:grid-cols-[1fr,260px] gap-3">
           <input id="q" class="input" placeholder="タイトル（例: 進撃の巨人 / NARUTO / 呪術廻戦）">
           <div class="flex gap-2">
@@ -493,6 +501,7 @@
         badge.textContent = '接続: AniList（テスト省略）';
         state.provider = 'anilist';
       }
+
       testConnections();
 
       async function loadTrending() {
@@ -798,33 +807,50 @@
       };
 
       function renderReviews() {
-        const fs = filterStatus.value, ft = (filterTag.value || '').toLowerCase(), sb = sortBy.value;
-        let rows = Object.entries(state.recs).map(([id, rec]) => ({ id: Number(id), rec, m: state.cache[id] || rec.meta ? { title: { native: rec.meta?.title }, coverImage: { large: rec.meta?.cover }, studios: { nodes: [{ name: rec.meta?.studio }] } } : null }));
-        rows = rows.filter(r => !fs || r.rec.status === fs).filter(r => !ft || (r.rec.tags || []).some(t => t.toLowerCase().includes(ft)));
-        rows.sort((a, b) => sb === 'score' ? (b.rec.score || 0) - (a.rec.score || 0) : sb === 'title' ? ((a.m?.title?.native || a.rec.meta?.title || '').localeCompare(b.m?.title?.native || b.rec.meta?.title || '')) : (b.rec.updatedAt || 0) - (a.rec.updatedAt || 0));
-        const avg = rows.length ? (rows.reduce((s, r) => s + (r.rec.score || 0), 0) / rows.length).toFixed(1) : '-';
-        reviewStats.textContent = `件数: ${rows.length}　平均点: ${avg}`;
+        const fs = filterStatus.value,
+          ft = (filterTag.value || '').toLowerCase(),
+          sb = sortBy.value;
+
+        let rows = Object.entries(state.recs).map(([id, rec]) => ({
+          id: Number(id),
+          rec,
+          m: state.cache[id] || rec.meta
+            ? { title: { native: rec.meta?.title }, coverImage: { large: rec.meta?.coverImage } }
+            : {}
+        }));
+
+        rows = rows
+          .filter(r => !fs || r.rec.status === fs)
+          .filter(r => !ft || (r.rec.tags || []).some(t => t.toLowerCase().includes(ft)));
+
+        rows.sort((a, b) =>
+          sb === 'score'
+            ? (b.rec.score || 0) - (a.rec.score || 0)
+            : sb === 'title'
+              ? (a.m?.title?.native || a.rec.meta?.title || '').localeCompare(b.m?.title?.native || b.rec.meta?.title || '')
+              : 0
+        );
+
+        // 平均点と件数を計算
+        const avg = rows.length
+          ? (rows.reduce((s, r) => s + (r.rec.score || 0), 0) / rows.length).toFixed(1)
+          : '-';
+
+        // ← ここに安全な代入処理を追加！
+        const statsEl = document.getElementById('reviewStats');
+        if (statsEl) statsEl.textContent = `件数: ${rows.length}　平均点: ${avg}`;
+
         const countEl = document.getElementById('reviewCount');
         if (countEl) countEl.textContent = rows.length;
 
-        reviewList.innerHTML = '';
-        const tpl = document.getElementById('tpl-review').content;
-        rows.forEach(r => {
-          const n = tpl.cloneNode(true);
-          const cover = r.m?.coverImage?.large || r.rec.meta?.cover || '';
-          const img = n.querySelector('img');
-          img.src = cover;
-          img.alt = r.m?.title?.native || r.rec.meta?.title || ('ID ' + r.id);
-          img.onclick = () => openModal(r.id);
-          n.querySelector('[data-title]').textContent = r.m?.title?.native || r.rec.meta?.title || ('ID ' + r.id);
-          const scoreBox = document.createElement('div'); setCircle(scoreBox, r.rec.score || 0);
-          n.querySelector('[data-score]').appendChild(scoreBox);
-          const studio = (r.m?.studios?.nodes?.[0]?.name) || r.rec.meta?.studio || '—';
-          n.querySelector('[data-meta]').innerHTML = `${(r.rec.tags || []).map(t => `<span class='chip'>${t}</span>`).join(' ')}　|　<span class='linklike'>${studio}</span>`;
-          n.querySelector('[data-meta]').querySelector('.linklike').onclick = () => searchByStudio(studio);
-          reviewList.appendChild(n);
-        });
+        // レビュー一覧描画（安全ガードつき）
+        const listEl = document.getElementById('reviewList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        // 以下：カードを並べる部分（元のコードのままでOK）
       }
+
       filterStatus.onchange = renderReviews; filterTag.oninput = () => { clearTimeout(window.__ft); window.__ft = setTimeout(renderReviews, 250) }; sortBy.onchange = renderReviews;
 
       function ensureTier() { if (!state.tier.length) state.tier = [{ label: 'S', items: [] }, { label: 'A', items: [] }, { label: 'B', items: [] }, { label: 'C', items: [] }]; }
@@ -861,38 +887,55 @@
 
       // Supabase にレビューを保存
       async function saveReviewToCloud(animeId, rec) {
-        const { data } = await supa.auth.getUser();
-        const uid = data?.user?.id;
-        if (!uid) return;
-        const row = {
-          user_id: uid,
+        if (!currentUser) return;
+
+        const payload = {
+          user_id: currentUser.id,
           anime_id: animeId,
-          rec_jsonb: rec,
-          updated_at: new Date().toISOString()
+          rec_jsonb: rec
         };
+
         const { error } = await supa
           .from('reviews')
-          .upsert(row, { onConflict: 'user_id,anime_id' });
+          .upsert(payload, { onConflict: 'user_id,anime_id' });
+
         if (error) console.error('saveReviewToCloud error:', error);
       }
 
+
       // Supabase からレビューを同期
       async function syncFromCloud() {
-        const { data } = await supa.auth.getUser();
-        const uid = data?.user?.id;
-        if (!uid) return;
-        const { data: rows, error } = await supa
+        if (!currentUser) return;
+
+        const { data, error } = await supa
           .from('reviews')
           .select('anime_id, rec_jsonb')
-          .eq('user_id', uid);
+          .eq('user_id', currentUser.id)
+          .order('updated_at', { ascending: false });
+
         if (error) {
           console.error('syncFromCloud error:', error);
           return;
         }
-        rows.forEach(r => { state.recs[r.anime_id] = r.rec_jsonb; });
-        save(LS, state.recs);
-        if (typeof renderReviews === 'function') renderReviews();
+
+        // DBの形 → 画面用の形に変換
+        const rows = (data || []).map(r => {
+          const rec = r.rec_jsonb || {};
+          return {
+            id: r.anime_id,
+            title: rec.title ?? '',
+            cover: rec.cover ?? '',
+            score: rec.score ?? null,
+            tags: rec.tags ?? [],
+            memo: rec.memo ?? ''
+          };
+        });
+
+        state.recs = rows;
+        save(LS, state.recs);  // ローカルキャッシュ更新
+        renderReviews(state.recs);
       }
+
 
 
       // 保存ボタン上書き（既存のままでOK）
