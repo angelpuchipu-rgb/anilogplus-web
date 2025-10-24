@@ -754,25 +754,28 @@
       mScore.oninput = e => { mScoreInput.value = e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
       mScoreInput.oninput = e => { const v = Math.max(1, Math.min(100, Number(e.target.value) || 1)); mScore.value = v; setCircle(mScoreCircle, v); }
       btnClose.onclick = closeModal;
-      btnSave.onclick = () => {
-        const id = state.editingId; if (!id) return;
+      btnSave.onclick = async () => {
+        const id = state.editingId;
+        if (!id) return;
         const m = state.cache[id] || {};
         const meta = {
-          title: (m.title?.native || m.title?.romaji || m.title?.english || ('ID ' + id)),
-          cover: (m.coverImage?.large || m.coverImage?.medium || ''),
-          studio: (m.studios?.nodes?.[0]?.name) || '—',
+          title: m.title?.native || m.title?.romaji || m.title?.english || ('ID ' + id),
+          cover: m.coverImage?.large || m.coverImage?.medium || '',
+          studio: m.studios?.nodes?.[0]?.name || '—',
           seasonYear: m.seasonYear || '',
           season: m.season || '',
           description: m.description || ''
         };
         const tags = mTags.value.split(',').map(s => s.trim()).filter(Boolean);
-        state.recs[id] = { status: mStatus.value || null, score: Number(mScore.value), tags, comment: mComment.value, updatedAt: Date.now(), meta };
+        const rec = { status: mStatus.value, score: Number(mScore.value), tags, comment: mComment.value, updatedAt: Date.now(), meta };
+        state.recs[id] = rec;
         save(LS, state.recs);
-        // レビュータブを見ているときは即再描画
-        if (!document.getElementById('view-reviews').classList.contains('hidden')) renderReviews();
+        await saveReviewToCloud(id, rec); // ← クラウドへ送信
+        await syncFromCloud();            // ← 直後に反映
         closeModal();
         alert('保存しました');
       };
+
       btnDelete.onclick = () => {
         const id = state.editingId; if (!id) return;
         if (confirm('このレビューを削除しますか？')) {
@@ -839,11 +842,41 @@
         if (currentUser) await syncFromCloud();
       })();
 
-      async function signUp() { /* 既存のままでOK */ }
-      async function signIn() { /* 既存のままでOK */ }
-      async function signOut() { /* 既存のままでOK */ }
-      async function syncFromCloud() { /* 既存のままでOK */ }
-      async function saveReviewToCloud(id, rec) { /* 既存のままでOK */ }
+      // Supabase にレビューを保存
+      async function saveReviewToCloud(animeId, rec) {
+        const { data } = await supa.auth.getUser();
+        const uid = data?.user?.id;
+        if (!uid) return;
+        const row = {
+          user_id: uid,
+          anime_id: animeId,
+          rec_jsonb: rec,
+          updated_at: new Date().toISOString()
+        };
+        const { error } = await supa
+          .from('reviews')
+          .upsert(row, { onConflict: 'user_id,anime_id' });
+        if (error) console.error('saveReviewToCloud error:', error);
+      }
+
+      // Supabase からレビューを同期
+      async function syncFromCloud() {
+        const { data } = await supa.auth.getUser();
+        const uid = data?.user?.id;
+        if (!uid) return;
+        const { data: rows, error } = await supa
+          .from('reviews')
+          .select('anime_id, rec_jsonb')
+          .eq('user_id', uid);
+        if (error) {
+          console.error('syncFromCloud error:', error);
+          return;
+        }
+        rows.forEach(r => { state.recs[r.anime_id] = r.rec_jsonb; });
+        save(LS, state.recs);
+        if (typeof renderReviews === 'function') renderReviews();
+      }
+
 
       // 保存ボタン上書き（既存のままでOK）
       const fileEl = document.getElementById('fileImport');
@@ -927,71 +960,6 @@
         await supa.auth.signOut();
         setAuthState(null);
       });
-    </script>
-    <script>
-      const SUPA_URL = "https://xxxxx.supabase.co";
-      const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....";
-      const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
-
-      let currentUser = null;
-
-      (async function initAuth() {
-        const { data } = await supa.auth.getUser();
-        currentUser = data.user || null;
-        const s = document.getElementById('authState');
-        s.textContent = currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
-        if (currentUser) await syncFromCloud();  // ←★ ここで呼び出せるようにする
-      })();
-
-      // ▼▼▼▼ ここから追加 ▼▼▼▼
-      async function saveReviewToCloud(animeId, rec) {
-        const { data } = await supa.auth.getUser();
-        const uid = data?.user?.id;
-        if (!uid) return;
-
-        const row = {
-          user_id: uid,
-          anime_id: animeId,
-          rec_jsonb: rec,
-          updated_at: new Date().toISOString()
-        };
-
-        const { error } = await supa
-          .from('reviews')
-          .upsert(row, { onConflict: 'user_id,anime_id' });
-
-        if (error) console.error('saveReviewToCloud error:', error);
-      }
-
-      async function syncFromCloud() {
-        const { data } = await supa.auth.getUser();
-        const uid = data?.user?.id;
-        if (!uid) return;
-
-        const { data: rows, error } = await supa
-          .from('reviews')
-          .select('anime_id, rec_jsonb')
-          .eq('user_id', uid);
-
-        if (error) {
-          console.error('syncFromCloud error:', error);
-          return;
-        }
-
-        rows.forEach(r => { state.recs[r.anime_id] = r.rec_jsonb; });
-        save(LS, state.recs);
-
-        if (typeof renderReviews === 'function') renderReviews();
-      }
-
-      // 保存ボタンの末尾で呼ぶ：
-      async function saveReview(animeId) {
-        const rec = state.recs[animeId];
-        save(LS, state.recs);
-        await saveReviewToCloud(animeId, rec);
-        await syncFromCloud();
-      }
-      // ▲▲▲▲ ここまで追加 ▲▲▲▲
     </script>
 
 
