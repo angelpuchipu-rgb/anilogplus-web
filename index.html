@@ -169,6 +169,40 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    .toast {
+      position: fixed;
+      right: 16px;
+      top: 16px;
+      background: #111827;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 9999;
+      font-weight: 600;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: none;
+    }
+
+    .toast.ok {
+      background: #16a34a;
+    }
+
+    /* 成功（緑） */
+    .toast.err {
+      background: #dc2626;
+    }
+
+    /* 失敗（赤）  */
+  </style>
+
 </head>
 
 <body>
@@ -406,6 +440,17 @@
 
   <!-- ===== アプリ本体（検索/レビュー/Tier） ===== -->
   <script>
+    function notify(msg, type = 'ok') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+      }, 2200);
+    }
     const LS = 'anilogplus_v1', LS_TIER = 'anilogplus_tier';
     const state = { cache: {}, recs: load(LS) || {}, tier: load(LS_TIER) || [], provider: 'anilist', editingId: null };
     function save(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
@@ -542,7 +587,18 @@
       list.forEach(m => {
         const n = tpl.cloneNode(true); const img = n.querySelector('img'); img.src = m.cover; img.alt = m.title; img.onclick = () => openModal(m.id);
         n.querySelector('.font-semibold').textContent = m.title;
-        async function translateToJapanese(text) { const maxLength = 400; const truncated = text.length > maxLength ? text.slice(0, maxLength) + '...' : text; try { const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data = await res.json(); return data.responseData.translatedText || truncated; } catch { return truncated; } }
+        async function translateToJapanese(text) {
+          try {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ja`;
+            const r = await fetch(url);
+            if (!r.ok) throw new Error('rate limit');
+            const j = await r.json();
+            return j?.responseData?.translatedText || text;
+          } catch (e) {
+            return text; // 失敗したら英語のまま
+          }
+        }
+
         (async () => { n.querySelector('[data-desc]').textContent = await translateToJapanese(m.desc || ''); })();
         const chips = n.querySelector('[data-chips]'); (m.chips || []).forEach(t => { const s = document.createElement('span'); s.className = 'chip'; s.textContent = t.label; s.onclick = () => { q.value = t.label; search(1); }; chips.appendChild(s); });
         n.querySelector('[data-edit]').onclick = () => openModal(m.id); n.querySelector('[data-tier]').onclick = () => addToTier(m.id);
@@ -569,212 +625,244 @@
 
       // 削除ハンドラ（毎回バインド）
       btnDelete.onclick = async () => {
-        if (!state.editingId) return;
+        if (!m) return;
         if (!confirm('このレビューを削除しますか？')) return;
-        await removeReview(state.editingId);
-        closeModal();
-        await syncFromCloud(); // 念のため
+        await removeReview(id);
       };
 
-      mTitle.textContent = m?.title?.native || m?.title?.romaji || m?.title?.english || ('ID ' + id);
-      mMeta.textContent = `${m?.seasonYear || ''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name) || '—'}`;
-      async function translateToJapanese(text) { const maxLength = 400; const truncated = text.length > maxLength ? text.slice(0, maxLength) + '...' : text; try { const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data = await res.json(); return data.responseData.translatedText || truncated; } catch { return text; } }
-      (async () => { mDesc.textContent = await translateToJapanese(m?.description || ''); })();
+        mTitle.textContent = m?.title?.native || m?.title?.romaji || m?.title?.english || ('ID ' + id);
+        mMeta.textContent = `${m?.seasonYear || ''} ${jpSeason(m?.season)} / ${(m?.studios?.nodes?.[0]?.name) || '—'}`;
+        async function translateToJapanese(text) { const maxLength = 400; const truncated = text.length > maxLength ? text.slice(0, maxLength) + '...' : text; try { const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(truncated)}&langpair=en|ja`); const data = await res.json(); return data.responseData.translatedText || truncated; } catch { return text; } }
+        (async () => { mDesc.textContent = await translateToJapanese(m?.description || ''); })();
 
-      // 既定は「見た」
-      mStatus.value = rec.status || 'SEEN';
-      mScore.value = rec.score || 80; mScoreInput.value = rec.score || 80; setCircle(mScoreCircle, rec.score || 80);
-      mTags.value = (rec.tags || []).join(', ');
-      mComment.value = rec.comment || '';
-      overlay.style.display = 'flex';
+        // 既定は「見た」
+        mStatus.value = rec.status || 'SEEN';
+        mScore.value = rec.score || 80; mScoreInput.value = rec.score || 80; setCircle(mScoreCircle, rec.score || 80);
+        mTags.value = (rec.tags || []).join(', ');
+        mComment.value = rec.comment || '';
+        overlay.style.display = 'flex';
 
-      (async () => {
-        const rightWrap = document.getElementById('mRelated');
-        const rightSec = document.getElementById('mRelatedWrap');
-        const leftSec = document.getElementById('mRelatedLeft');
-        const leftChips = document.getElementById('mRelatedChipsLeft');
-        if (rightWrap) rightWrap.innerHTML = ''; if (leftChips) leftChips.innerHTML = ''; if (leftSec) leftSec.classList.add('hidden');
+        (async () => {
+          const rightWrap = document.getElementById('mRelated');
+          const rightSec = document.getElementById('mRelatedWrap');
+          const leftSec = document.getElementById('mRelatedLeft');
+          const leftChips = document.getElementById('mRelatedChipsLeft');
+          if (rightWrap) rightWrap.innerHTML = ''; if (leftChips) leftChips.innerHTML = ''; if (leftSec) leftSec.classList.add('hidden');
 
-        let list = [];
-        if (state.provider === 'anilist') { list = await fetchRelationsAniList(id); }
-        else { list = await fetchRelationsJikan(id); }
+          let list = [];
+          if (state.provider === 'anilist') { list = await fetchRelationsAniList(id); }
+          else { list = await fetchRelationsJikan(id); }
 
-        if (Array.isArray(list) && list.length) {
-          list.sort((a, b) => (b.seasonYear || 0) - (a.seasonYear || 0));
-          if (leftSec) leftSec.classList.remove('hidden');
-          list.forEach(x => {
-            const b = document.createElement('button'); b.className = 'chip';
-            b.textContent = (x.title?.native || x.title?.romaji || '') + (x.seasonYear ? ` ${x.seasonYear}` : '') + (x.season ? ` ${jpSeason(x.season)}` : '');
-            b.onclick = () => openModal(x.id);
-            leftChips.appendChild(b);
-            state.cache[x.id] = Object.assign(state.cache[x.id] || {}, { title: x.title, coverImage: { medium: x.coverImage?.medium }, season: x.season, seasonYear: x.seasonYear });
+          if (Array.isArray(list) && list.length) {
+            list.sort((a, b) => (b.seasonYear || 0) - (a.seasonYear || 0));
+            if (leftSec) leftSec.classList.remove('hidden');
+            list.forEach(x => {
+              const b = document.createElement('button'); b.className = 'chip';
+              b.textContent = (x.title?.native || x.title?.romaji || '') + (x.seasonYear ? ` ${x.seasonYear}` : '') + (x.season ? ` ${jpSeason(x.season)}` : '');
+              b.onclick = () => openModal(x.id);
+              leftChips.appendChild(b);
+              state.cache[x.id] = Object.assign(state.cache[x.id] || {}, { title: x.title, coverImage: { medium: x.coverImage?.medium }, season: x.season, seasonYear: x.seasonYear });
+            });
+            if (rightSec) rightSec.classList.add('hidden');
+          } else { if (rightSec) rightSec.classList.add('hidden'); if (leftSec) leftSec.classList.add('hidden'); }
+        })();
+      }
+
+      function closeModal() { overlay.style.display = 'none'; }
+      mScore.oninput = e => { mScoreInput.value = e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
+      mScoreInput.oninput = e => { const v = Math.max(1, Math.min(100, Number(e.target.value) || 1)); mScore.value = v; setCircle(mScoreCircle, v); }
+      btnClose.onclick = closeModal;
+
+      btnSave.onclick = async () => {
+        if (!currentModalAnime) return;
+        const id = currentModalAnime.id;
+
+        // フォームから rec を組み立て（既存実装のままでOK）
+        const rec = collectModalFormValues(); // ←あなたの既存関数に合わせてください
+        // ここまで既存 -------------------------
+
+        try {
+          // 先にローカル保存（既存）
+          state.recs[id] = rec;
+          save(LS, state.recs);
+
+          // クラウド保存（既存の saveReviewToCloud を利用）
+          if (typeof saveReviewToCloud === 'function') {
+            await saveReviewToCloud(id, rec);
+          }
+
+          // 画面反映
+          if (typeof renderReviews === 'function') renderReviews();
+
+          // ✅ 成功通知＋モーダル閉じる
+          notify('保存しました', 'ok');
+          if (typeof closeModal === 'function') closeModal();
+
+        } catch (e) {
+          console.error(e);
+          notify('保存に失敗しました', 'err');
+        }
+
+        // レビュー一覧描画
+        function renderReviews() {
+          const fs = filterStatus.value, ft = (filterTag.value || '').toLowerCase(), sb = sortBy.value;
+          let rows = Object.entries(state.recs).map(([id, rec]) => ({ id: Number(id), rec, m: state.cache[id] || rec.meta ? { title: { native: rec.meta?.title }, coverImage: { medium: rec.meta?.cover } } : {} }));
+          rows = rows.filter(r => !fs || r.rec.status === fs).filter(r => !ft || (r.rec.tags || []).some(t => t.toLowerCase().includes(ft)));
+          rows.sort((a, b) => sb === 'score' ? (b.rec.score || 0) - (a.rec.score || 0) : sb === 'title' ? (a.m?.title?.native || a.rec.meta?.title || '').localeCompare(b.m?.title?.native || b.rec.meta?.title || '') : 0);
+
+          const avg = rows.length ? (rows.reduce((s, r) => s + (r.rec.score || 0), 0) / rows.length).toFixed(1) : '-';
+          const statsEl = document.getElementById('reviewStats'); if (statsEl) statsEl.textContent = `件数: ${rows.length}　平均点: ${avg}`;
+          const countEl = document.getElementById('reviewCount'); if (countEl) countEl.textContent = rows.length;
+
+          const listEl = document.getElementById('reviewList'); if (!listEl) return; listEl.innerHTML = '';
+          const tpl = document.getElementById('tpl-review').content;
+
+          rows.forEach(({ id, rec, m }) => {
+            const n = tpl.cloneNode(true);
+            const img = n.querySelector('img'), metaEl = n.querySelector('[data-meta]'), scoreEl = n.querySelector('[data-score]'), commentEl = n.querySelector('[data-comment]');
+            const title = m?.title?.native || rec.meta?.title || ('ID ' + id);
+            const cover = m?.coverImage?.medium || m?.coverImage?.large || rec.meta?.cover || '';
+            img.src = cover; img.alt = title; img.onclick = () => openModal(id);
+            scoreEl.textContent = (rec.score ?? '-') + '';
+            metaEl.textContent = `${rec.meta?.seasonYear || ''} ${rec.meta?.season || ''} / ${rec.meta?.studio || '—'}`;
+            commentEl.textContent = rec.comment || '';
+            listEl.appendChild(n);
           });
-          if (rightSec) rightSec.classList.add('hidden');
-        } else { if (rightSec) rightSec.classList.add('hidden'); if (leftSec) leftSec.classList.add('hidden'); }
-      })();
-    }
+        }
 
-    function closeModal() { overlay.style.display = 'none'; }
-    mScore.oninput = e => { mScoreInput.value = e.target.value; setCircle(mScoreCircle, Number(e.target.value)); }
-    mScoreInput.oninput = e => { const v = Math.max(1, Math.min(100, Number(e.target.value) || 1)); mScore.value = v; setCircle(mScoreCircle, v); }
-    btnClose.onclick = closeModal;
+        filterStatus.onchange = renderReviews;
+        filterTag.oninput = () => { clearTimeout(window.__ft); window.__ft = setTimeout(renderReviews, 250) };
+        sortBy.onchange = renderReviews;
 
-    btnSave.onclick = async () => {
-      const id = state.editingId; if (!id) return;
-      const m = state.cache[id] || {};
-      const meta = {
-        title: m.title?.native || m.title?.romaji || m.title?.english || ('ID ' + id),
-        cover: m.coverImage?.large || m.coverImage?.medium || '',
-        studio: m.studios?.nodes?.[0]?.name || '—',
-        seasonYear: m.seasonYear || '',
-        season: m.season || '',
-        description: m.description || ''
+        // Tier
+        function ensureTier() { if (!state.tier.length) state.tier = [{ label: 'S', items: [] }, { label: 'A', items: [] }, { label: 'B', items: [] }, { label: 'C', items: [] }] }
+        function renderTier() { ensureTier(); tierBoard.innerHTML = ''; state.tier.forEach((row, i) => { const t = document.getElementById('tpl-tier-row').content; const n = t.cloneNode(true); const input = n.querySelector('input'); input.value = row.label; input.onchange = () => { row.label = input.value; save(LS_TIER, state.tier) }; n.querySelector('[data-del]').onclick = () => { state.tier.splice(i, 1); save(LS_TIER, state.tier); renderTier() }; const zone = n.querySelector('[data-zone]'); row.items.forEach(id => { const m = state.cache[id] || state.recs[id]?.meta ? { coverImage: { medium: state.recs[id].meta.cover }, title: { native: state.recs[id].meta.title } } : null; const card = document.createElement('div'); card.className = 'rounded overflow-hidden border border-white/10 bg-black/40'; card.dataset.id = id; card.innerHTML = `<img src="${m?.coverImage?.medium || ''}" class="w-full h-32 object-contain bg-black/60"><div class="p-2 text-xs">${m?.title?.native || ('ID ' + id)}</div>`; zone.appendChild(card) }); new Sortable(zone, { group: 'tier', animation: 150, onAdd: saveTierFromDOM, onUpdate: saveTierFromDOM, onRemove: saveTierFromDOM }); tierBoard.appendChild(n); }); }
+        function saveTierFromDOM() { const rows = [...document.querySelectorAll('#tierBoard [data-zone]')]; state.tier = rows.map((zone, i) => ({ label: document.querySelectorAll('#tierBoard input')[i].value, items: [...zone.children].map(el => Number(el.dataset.id)) })); save(LS_TIER, state.tier); }
+        function addToTier(id) { ensureTier(); if (!state.tier[0].items.includes(id)) { state.tier[0].items.push(id); save(LS_TIER, state.tier); renderTier(); } }
+        tierAdd.onclick = () => { state.tier.push({ label: '新段', items: [] }); save(LS_TIER, state.tier); renderTier() };
+        tierReset.onclick = () => { if (confirm('Tier表を空にしますか？')) { state.tier = []; save(LS_TIER, state.tier); renderTier() } };
+        tierPng.onclick = async () => { const canvas = await html2canvas(tierBoard, { backgroundColor: '#050914', scale: 2 }); const a = document.createElement('a'); a.download = 'anilogplus-tier.png'; a.href = canvas.toDataURL('image/png'); a.click(); };
+
+        // JSON出力/読み込み
+        btnExport.onclick = () => { const blob = new Blob([JSON.stringify({ records: state.recs, tier: state.tier, version: 4 }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.download = 'anilogplus-data.json'; a.href = URL.createObjectURL(blob); a.click(); };
+        fileImport.onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const t = await f.text(); const j = JSON.parse(t); if (j.records) state.recs = j.records; if (j.tier) state.tier = j.tier; save(LS, state.recs); save(LS_TIER, state.tier); alert('読み込みました'); renderReviews(); renderTier() } catch { alert('JSON形式が不正です') } };
+
+        // ※ローカルだけ全削除（Supabase版は後段の関数を利用）
+        btnWipe.onclick = () => { if (confirm('本当に削除しますか？')) { localStorage.removeItem(LS); localStorage.removeItem(LS_TIER); state.recs = {}; state.tier = []; alert('削除しました'); renderReviews(); } };
+
+        switchView('search');
       };
-      const tags = mTags.value.split(',').map(s => s.trim()).filter(Boolean);
-      const rec = { status: mStatus.value, score: Number(mScore.value), tags, comment: mComment.value, updatedAt: Date.now(), meta };
-      state.recs[id] = rec; save(LS, state.recs);
-      await saveReviewToCloud(id, rec);
-      await syncFromCloud();  // 即反映
-      closeModal();
-      alert('保存しました');
-    };
-
-    // レビュー一覧描画
-    function renderReviews() {
-      const fs = filterStatus.value, ft = (filterTag.value || '').toLowerCase(), sb = sortBy.value;
-      let rows = Object.entries(state.recs).map(([id, rec]) => ({ id: Number(id), rec, m: state.cache[id] || rec.meta ? { title: { native: rec.meta?.title }, coverImage: { medium: rec.meta?.cover } } : {} }));
-      rows = rows.filter(r => !fs || r.rec.status === fs).filter(r => !ft || (r.rec.tags || []).some(t => t.toLowerCase().includes(ft)));
-      rows.sort((a, b) => sb === 'score' ? (b.rec.score || 0) - (a.rec.score || 0) : sb === 'title' ? (a.m?.title?.native || a.rec.meta?.title || '').localeCompare(b.m?.title?.native || b.rec.meta?.title || '') : 0);
-
-      const avg = rows.length ? (rows.reduce((s, r) => s + (r.rec.score || 0), 0) / rows.length).toFixed(1) : '-';
-      const statsEl = document.getElementById('reviewStats'); if (statsEl) statsEl.textContent = `件数: ${rows.length}　平均点: ${avg}`;
-      const countEl = document.getElementById('reviewCount'); if (countEl) countEl.textContent = rows.length;
-
-      const listEl = document.getElementById('reviewList'); if (!listEl) return; listEl.innerHTML = '';
-      const tpl = document.getElementById('tpl-review').content;
-
-      rows.forEach(({ id, rec, m }) => {
-        const n = tpl.cloneNode(true);
-        const img = n.querySelector('img'), metaEl = n.querySelector('[data-meta]'), scoreEl = n.querySelector('[data-score]'), commentEl = n.querySelector('[data-comment]');
-        const title = m?.title?.native || rec.meta?.title || ('ID ' + id);
-        const cover = m?.coverImage?.medium || m?.coverImage?.large || rec.meta?.cover || '';
-        img.src = cover; img.alt = title; img.onclick = () => openModal(id);
-        scoreEl.textContent = (rec.score ?? '-') + '';
-        metaEl.textContent = `${rec.meta?.seasonYear || ''} ${rec.meta?.season || ''} / ${rec.meta?.studio || '—'}`;
-        commentEl.textContent = rec.comment || '';
-        listEl.appendChild(n);
-      });
-    }
-
-    filterStatus.onchange = renderReviews;
-    filterTag.oninput = () => { clearTimeout(window.__ft); window.__ft = setTimeout(renderReviews, 250) };
-    sortBy.onchange = renderReviews;
-
-    // Tier
-    function ensureTier() { if (!state.tier.length) state.tier = [{ label: 'S', items: [] }, { label: 'A', items: [] }, { label: 'B', items: [] }, { label: 'C', items: [] }] }
-    function renderTier() { ensureTier(); tierBoard.innerHTML = ''; state.tier.forEach((row, i) => { const t = document.getElementById('tpl-tier-row').content; const n = t.cloneNode(true); const input = n.querySelector('input'); input.value = row.label; input.onchange = () => { row.label = input.value; save(LS_TIER, state.tier) }; n.querySelector('[data-del]').onclick = () => { state.tier.splice(i, 1); save(LS_TIER, state.tier); renderTier() }; const zone = n.querySelector('[data-zone]'); row.items.forEach(id => { const m = state.cache[id] || state.recs[id]?.meta ? { coverImage: { medium: state.recs[id].meta.cover }, title: { native: state.recs[id].meta.title } } : null; const card = document.createElement('div'); card.className = 'rounded overflow-hidden border border-white/10 bg-black/40'; card.dataset.id = id; card.innerHTML = `<img src="${m?.coverImage?.medium || ''}" class="w-full h-32 object-contain bg-black/60"><div class="p-2 text-xs">${m?.title?.native || ('ID ' + id)}</div>`; zone.appendChild(card) }); new Sortable(zone, { group: 'tier', animation: 150, onAdd: saveTierFromDOM, onUpdate: saveTierFromDOM, onRemove: saveTierFromDOM }); tierBoard.appendChild(n); }); }
-    function saveTierFromDOM() { const rows = [...document.querySelectorAll('#tierBoard [data-zone]')]; state.tier = rows.map((zone, i) => ({ label: document.querySelectorAll('#tierBoard input')[i].value, items: [...zone.children].map(el => Number(el.dataset.id)) })); save(LS_TIER, state.tier); }
-    function addToTier(id) { ensureTier(); if (!state.tier[0].items.includes(id)) { state.tier[0].items.push(id); save(LS_TIER, state.tier); renderTier(); } }
-    tierAdd.onclick = () => { state.tier.push({ label: '新段', items: [] }); save(LS_TIER, state.tier); renderTier() };
-    tierReset.onclick = () => { if (confirm('Tier表を空にしますか？')) { state.tier = []; save(LS_TIER, state.tier); renderTier() } };
-    tierPng.onclick = async () => { const canvas = await html2canvas(tierBoard, { backgroundColor: '#050914', scale: 2 }); const a = document.createElement('a'); a.download = 'anilogplus-tier.png'; a.href = canvas.toDataURL('image/png'); a.click(); };
-
-    // JSON出力/読み込み
-    btnExport.onclick = () => { const blob = new Blob([JSON.stringify({ records: state.recs, tier: state.tier, version: 4 }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.download = 'anilogplus-data.json'; a.href = URL.createObjectURL(blob); a.click(); };
-    fileImport.onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const t = await f.text(); const j = JSON.parse(t); if (j.records) state.recs = j.records; if (j.tier) state.tier = j.tier; save(LS, state.recs); save(LS_TIER, state.tier); alert('読み込みました'); renderReviews(); renderTier() } catch { alert('JSON形式が不正です') } };
-
-    // ※ローカルだけ全削除（Supabase版は後段の関数を利用）
-    btnWipe.onclick = () => { if (confirm('本当に削除しますか？')) { localStorage.removeItem(LS); localStorage.removeItem(LS_TIER); state.recs = {}; state.tier = []; alert('削除しました'); renderReviews(); } };
-
-    switchView('search');
   </script>
 
   <!-- ===== Supabase ログイン & 同期 ===== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ★あなたの Supabase プロジェクト設定
-    const SUPA_URL = "https://zrfrllgbsyttxmfvswfx.supabase.co";
-    const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnJsbGdic3l0dHhtZnZzd2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjI0NDAsImV4cCI6MjA3Njc5ODQ0MH0.yw7Ld1Q2e-ITOPlDlZR4WRUReZvRuIg8vt_bYYOenVs";
-    const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
+        // ★あなたの Supabase プロジェクト設定
+        const SUPA_URL = "https://zrfrllgbsyttxmfvswfx.supabase.co";
+        const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnJsbGdic3l0dHhtZnZzd2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjI0NDAsImV4cCI6MjA3Njc5ODQ0MH0.yw7Ld1Q2e-ITOPlDlZR4WRUReZvRuIg8vt_bYYOenVs";
+        const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
-    let currentUser = null;
+        let currentUser = null;
 
-    (async function initAuth() {
-      const { data } = await supa.auth.getUser();
-      currentUser = data.user || null;
-      const s = document.getElementById('authState');
-      if (s) s.textContent = currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
-      if (currentUser) await syncFromCloud();
-    })();
+        (async function initAuth() {
+          const { data } = await supa.auth.getUser();
+          currentUser = data.user || null;
+          const s = document.getElementById('authState');
+          if (s) s.textContent = currentUser ? `ログイン中: ${currentUser.email}` : '未ログイン';
+          if (currentUser) await syncFromCloud();
+        })();
 
-    // 保存（Upsert）
-    async function saveReviewToCloud(animeId, rec) {
-      if (!currentUser) return;
-      const payload = { user_id: currentUser.id, anime_id: animeId, rec_jsonb: rec };
-      const { error } = await supa.from('reviews').upsert(payload, { onConflict: 'user_id,anime_id' });
-      if (error) console.error('saveReviewToCloud error:', error);
-    }
+        // 保存（Upsert）
+        async function saveReviewToCloud(animeId, rec) {
+          if (!currentUser) return;
+          const payload = { user_id: currentUser.id, anime_id: animeId, rec_jsonb: rec };
+          const { error } = await supa.from('reviews').upsert(payload, { onConflict: 'user_id,anime_id' });
+          if (error) console.error('saveReviewToCloud error:', error);
+        }
 
-    // 1件削除（ローカル→クラウド）
-    async function removeReview(id) {
-      delete state.recs[id]; save(LS, state.recs); renderReviews();
-      if (currentUser) {
-        const { error } = await supa.from('reviews').delete().match({ user_id: currentUser.id, anime_id: Number(id) });
-        if (error) { console.error('cloud delete error:', error); alert('クラウド削除に失敗しました。'); }
-      }
-    }
+        // 1件削除（ローカル→クラウド）
+        async function removeReview(animeId) {
+          // ローカルから削除
+          delete state.recs[animeId];
+          save(LS, state.recs);
 
-    // 全削除（クラウド→ローカル）
-    async function removeAllReviewsOfCurrentUser() {
-      if (currentUser) {
-        const { error } = await supa.from('reviews').delete().eq('user_id', currentUser.id);
-        if (error) { console.error('cloud wipe error:', error); alert('クラウド全削除に失敗しました。'); }
-      }
-      state.recs = {}; save(LS, state.recs); renderReviews();
-    }
+          // クラウドから削除
+          if (typeof supa !== 'undefined') {
+            try {
+              const uid = (await supa.auth.getUser()).data.user?.id;
+              if (uid) {
+                await supa
+                  .from('reviews')
+                  .delete()
+                  .eq('user_id', uid)
+                  .eq('anime_id', animeId);
+              }
+            } catch (e) {
+              console.error('delete cloud error:', e);
+              // クラウド失敗でもローカルは消してあるので通知だけ出す
+            }
+          }
 
-    // 同期（クラウド→ローカル）
-    async function syncFromCloud() {
-      if (!currentUser) return;
-      const { data, error } = await supa.from('reviews').select('anime_id, rec_jsonb').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
-      if (error) { console.error('syncFromCloud error:', error); return; }
-      const obj = {}; (data || []).forEach(r => { obj[String(r.anime_id)] = r.rec_jsonb || {}; });
-      state.recs = obj; save(LS, state.recs); renderReviews();
-    }
+          // 再描画
+          if (typeof renderReviews === 'function') renderReviews();
 
-    // 画面のログイン状態表示
-    const $ = id => document.getElementById(id);
-    function setAuthState(user) { const s = $('authState'); if (!s) return; s.textContent = user ? `ログイン中: ${user.email}` : '未ログイン'; }
+          // ✅ 通知 + モーダル閉じる
+          notify('削除しました', 'ok');
+          if (typeof closeModal === 'function') closeModal();
+        }
 
-    // 状態変化
-    supa.auth.onAuthStateChange(async (_event, session) => {
-      currentUser = session?.user || null;
-      setAuthState(currentUser);
-      if (currentUser) await syncFromCloud();
-    });
 
-    // 新規登録
-    $('btnSignUp')?.addEventListener('click', async () => {
-      const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
-      if (!email || !password) return alert('メールとパスワードを入力してください');
-      const { error } = await supa.auth.signUp({ email, password, options: { emailRedirectTo: 'https://angelpuchipu-rgb.github.io/anilogplus-web/' } });
-      if (error) alert(error.message); else alert('確認メールを送信しました。メール内のリンクを開いてください。');
-    });
+        // 全削除（クラウド→ローカル）
+        async function removeAllReviewsOfCurrentUser() {
+          if (currentUser) {
+            const { error } = await supa.from('reviews').delete().eq('user_id', currentUser.id);
+            if (error) { console.error('cloud wipe error:', error); alert('クラウド全削除に失敗しました。'); }
+          }
+          state.recs = {}; save(LS, state.recs); renderReviews();
+        }
 
-    // ログイン
-    $('btnSignIn')?.addEventListener('click', async () => {
-      const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
-      if (!email || !password) return alert('メールとパスワードを入力してください');
-      const { data, error } = await supa.auth.signInWithPassword({ email, password });
-      if (error) return alert(error.message);
-      setAuthState(data.user); await syncFromCloud();
-    });
+        // 同期（クラウド→ローカル）
+        async function syncFromCloud() {
+          if (!currentUser) return;
+          const { data, error } = await supa.from('reviews').select('anime_id, rec_jsonb').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
+          if (error) { console.error('syncFromCloud error:', error); return; }
+          const obj = {}; (data || []).forEach(r => { obj[String(r.anime_id)] = r.rec_jsonb || {}; });
+          state.recs = obj; save(LS, state.recs); renderReviews();
+        }
 
-    // ログアウト
-    $('btnSignOut')?.addEventListener('click', async () => {
-      await supa.auth.signOut(); setAuthState(null);
-      state.recs = {}; save(LS, state.recs); renderReviews();
-    });
+        // 画面のログイン状態表示
+        const $ = id => document.getElementById(id);
+        function setAuthState(user) { const s = $('authState'); if (!s) return; s.textContent = user ? `ログイン中: ${user.email}` : '未ログイン'; }
+
+        // 状態変化
+        supa.auth.onAuthStateChange(async (_event, session) => {
+          currentUser = session?.user || null;
+          setAuthState(currentUser);
+          if (currentUser) await syncFromCloud();
+        });
+
+        // 新規登録
+        $('btnSignUp')?.addEventListener('click', async () => {
+          const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
+          if (!email || !password) return alert('メールとパスワードを入力してください');
+          const { error } = await supa.auth.signUp({ email, password, options: { emailRedirectTo: 'https://angelpuchipu-rgb.github.io/anilogplus-web/' } });
+          if (error) alert(error.message); else alert('確認メールを送信しました。メール内のリンクを開いてください。');
+        });
+
+        // ログイン
+        $('btnSignIn')?.addEventListener('click', async () => {
+          const email = $('authEmail')?.value.trim(), password = $('authPass')?.value;
+          if (!email || !password) return alert('メールとパスワードを入力してください');
+          const { data, error } = await supa.auth.signInWithPassword({ email, password });
+          if (error) return alert(error.message);
+          setAuthState(data.user); await syncFromCloud();
+        });
+
+        // ログアウト
+        $('btnSignOut')?.addEventListener('click', async () => {
+          await supa.auth.signOut(); setAuthState(null);
+          state.recs = {}; save(LS, state.recs); renderReviews();
+        });
   </script>
 </body>
 
